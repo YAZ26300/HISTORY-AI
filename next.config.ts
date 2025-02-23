@@ -1,7 +1,18 @@
-import type { NextConfig } from "next";
+import type { Config } from "next";
 
-const nextConfig: NextConfig = {
-  /* config options here */
+const config: Config = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.x.ai',
+      },
+    ],
+  },
 };
 
-export default nextConfig;
+export default config;
