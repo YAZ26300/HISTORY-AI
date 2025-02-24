@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Theme } from '@radix-ui/themes';
 import "./globals.css";
+import RootLayoutClient from './RootLayoutClient';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,11 +17,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
-      <body className={`${inter.className} min-h-screen bg-gradient-to-br from-purple-50 to-pink-50`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {children}
-        </div>
+    <html lang="fr" className="dark">
+      <body className={inter.className}>
+        <Theme appearance="dark" accentColor="blue" radius="medium">
+          <RootLayoutClient>
+            {children}
+          </RootLayoutClient>
+        </Theme>
       </body>
     </html>
   );

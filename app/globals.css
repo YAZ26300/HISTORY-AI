@@ -1,3 +1,4 @@
+@import '@radix-ui/themes/styles.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,39 +7,60 @@
   --primary-color: #FF6B6B;
   --secondary-color: #4ECDC4;
   --accent-color: #FFE66D;
-  --background-color: #F7F7F7;
-  --text-color: #2C3E50;
+  --background-color: #0D1117;
+  --card-background: #161B22;
+  --text-color: #C9D1D9;
+  --border-color: #30363D;
+  --hover-color: #1F2937;
 }
 
 @layer base {
   body {
-    @apply text-gray-900 antialiased;
+    @apply bg-[var(--background-color)] text-[var(--text-color)] antialiased min-h-screen;
   }
 
   h1 {
-    @apply text-4xl font-bold mb-6 text-primary;
+    @apply text-4xl font-bold mb-6 text-[var(--text-color)];
   }
 
   h2 {
-    @apply text-3xl font-semibold mb-4 text-secondary;
+    @apply text-3xl font-semibold mb-4 text-[var(--text-color)];
   }
 
   h3 {
-    @apply text-2xl font-medium mb-3;
+    @apply text-2xl font-medium mb-3 text-[var(--text-color)];
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-3 bg-primary text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1;
+    @apply px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold 
+           shadow-lg hover:bg-blue-700 transition-all duration-300 
+           transform hover:-translate-y-1 disabled:opacity-50 
+           disabled:cursor-not-allowed disabled:hover:transform-none;
   }
 
   .card {
-    @apply bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300;
+    @apply bg-[var(--card-background)] rounded-xl shadow-lg p-6 
+           border border-[var(--border-color)] hover:border-blue-500/50 
+           transition-all duration-300;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all duration-200;
+    @apply w-full px-4 py-3 rounded-lg bg-[var(--card-background)] 
+           border border-[var(--border-color)] text-[var(--text-color)]
+           focus:ring-2 focus:ring-blue-500 focus:border-transparent 
+           outline-none transition-all duration-200;
+  }
+
+  .tag {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm 
+           bg-blue-500/20 text-blue-400 border border-blue-500/30;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-2 px-4 py-2 rounded-lg 
+           hover:bg-[var(--hover-color)] transition-colors duration-200;
   }
 }
 
@@ -56,5 +78,13 @@
   100% {
     transform: translateY(0px);
   }
+}
+
+/* Radix UI theme overrides */
+.radix-themes {
+  --color-page-background: var(--background-color);
+  --color-panel-solid: var(--card-background);
+  --color-surface-neutral: var(--card-background);
+  --color-border-neutral: var(--border-color);
 }
 

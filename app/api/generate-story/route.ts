@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { HfInference } from "@huggingface/inference";
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1';
 const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY;
 
 // Configuration du client Hugging Face
@@ -14,9 +12,9 @@ interface StoryPart {
 }
 
 export async function POST(request: Request) {
-  if (!OPENROUTER_API_KEY || !HUGGINGFACE_API_KEY) {
+  if (!HUGGINGFACE_API_KEY) {
     return NextResponse.json(
-      { error: 'API keys not configured' },
+      { error: 'API key not configured' },
       { status: 500 }
     );
   }
@@ -24,112 +22,130 @@ export async function POST(request: Request) {
   try {
     const { theme, age, characters } = await request.json();
 
-    // Générer l'histoire avec un modèle moins coûteux
-    const systemPrompt = `Tu es un conteur d'histoires pour enfants professionnel. Ta tâche est de créer des histoires divisées en EXACTEMENT trois parties.
+    // Amélioration du prompt pour forcer le français et la structure
+    const storyPrompt = `Crée une histoire pour enfants de ${age} ans sur le thème "${theme}" avec les personnages suivants: ${characters}.
+
 RÈGLES IMPORTANTES:
-1. L'histoire DOIT avoir EXACTEMENT trois parties
-2. Chaque partie DOIT commencer par les marqueurs exacts: "PARTIE 1:", "PARTIE 2:", "PARTIE 3:"
-3. Chaque partie doit faire environ 100 mots
-4. Utilise un langage simple et des phrases courtes
-5. L'histoire doit être adaptée à l'âge indiqué
-6. Commence DIRECTEMENT avec "PARTIE 1:" sans aucune introduction ou texte avant
-7. Ne mets pas de titre ni de description avant de commencer l'histoire
+1. Réponds UNIQUEMENT en français
+2. L'histoire DOIT commencer DIRECTEMENT par "PARTIE 1:"
+3. L'histoire DOIT avoir EXACTEMENT trois parties
+4. Chaque partie DOIT commencer par "PARTIE 1:", "PARTIE 2:", "PARTIE 3:"
+5. Chaque partie doit faire environ 100 mots
+6. Utilise un langage simple et des phrases courtes
+7. L'histoire doit être adaptée aux enfants de ${age} ans
 
-Format EXACT attendu (commence directement comme ça):
-PARTIE 1: [texte de la première partie]
-PARTIE 2: [texte de la deuxième partie]
-PARTIE 3: [texte de la troisième partie]`;
-
-    const storyPrompt = `Crée une histoire pour enfants de ${age} ans sur le thème "${theme}" avec les personnages suivants: ${characters}. COMMENCE DIRECTEMENT avec "PARTIE 1:" sans aucune introduction.`;
+Format EXACT attendu:
+PARTIE 1: [histoire]
+PARTIE 2: [histoire]
+PARTIE 3: [histoire]`;
     
-    console.log('Sending story request to AI model');
+    console.log('Envoi de la requête pour l\'histoire');
     
-    const storyResponse = await fetch(`${OPENROUTER_API_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'http://localhost:3000',
-        'X-Title': 'Histoire pour Enfants - AI',
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-2.1',
+    const chatCompletion = await hf.chatCompletion({
+        model: "mistralai/Mistral-7B-Instruct-v0.2",
         messages: [
           {
-            role: 'system',
-            content: systemPrompt
+            role: "system",
+            content: "Tu es un conteur d'histoires pour enfants professionnel qui crée des histoires en trois parties. Tu dois ABSOLUMENT répondre en français et suivre le format demandé."
           },
           {
-            role: 'user',
-            content: storyPrompt,
+            role: "user",
+            content: storyPrompt
           }
         ],
         temperature: 0.7,
-        max_tokens: 1000,
-        stop: ["\n\n", "PARTIE 4:"],
-      }),
-    });
+        max_tokens: 500,
+      });
 
-    const storyData = await storyResponse.json();
-    console.log('Story Response:', storyData);
+    const storyText = chatCompletion.choices[0].message.content;
+    console.log('Texte généré:', storyText);
 
-    if (!storyResponse.ok || storyData.error) {
-      console.error('Story API Error:', storyData);
-      throw new Error(`Failed to generate story: ${storyData.error?.message || 'Unknown error'}`);
+    // Nettoyer et diviser l'histoire en parties avec une expression régulière plus robuste
+    const parts = storyText?.split(/PARTIE [1-3]:/)
+      .filter(Boolean)  // Enlever les chaînes vides
+      .map(part => part.trim())  // Enlever les espaces au début et à la fin
+      .filter(part => part.length > 0);  // Enlever les parties qui seraient vides après le trim
+    console.log('Parties détectées:', parts);
+
+    let storyParts: string[];
+
+    if (!parts || parts.length !== 3) {
+      console.error('Nombre de parties incorrect:', parts?.length);
+      console.error('Contenu des parties:', parts);
+      
+      // Réessayer avec un prompt plus strict
+      const retryPrompt = `${storyPrompt}\n\nATTENTION: Tu DOIS absolument suivre ce format EXACT, sans aucun texte avant ou après:\n\nPARTIE 1: [Première partie de l'histoire]\nPARTIE 2: [Deuxième partie de l'histoire]\nPARTIE 3: [Troisième partie de l'histoire]`;
+      
+      console.log('Réessai avec un prompt plus strict');
+      
+      const retryCompletion = await hf.chatCompletion({
+        model: "mistralai/Mistral-7B-Instruct-v0.2",
+        messages: [
+          {
+            role: "system",
+            content: "Tu es un conteur d'histoires pour enfants professionnel. Tu DOIS créer une histoire en EXACTEMENT trois parties, chacune commençant par 'PARTIE X:'. Ne réponds RIEN d'autre que l'histoire formatée exactement comme demandé."
+          },
+          {
+            role: "user",
+            content: retryPrompt
+          }
+        ],
+        temperature: 0.3,  // Température plus basse pour plus de conformité
+        max_tokens: 500,
+      });
+
+      const retryText = retryCompletion.choices[0].message.content;
+      console.log('Texte généré (2ème essai):', retryText);
+      
+      const retryParts = retryText?.split(/PARTIE [1-3]:/)
+        .filter(Boolean)
+        .map(part => part.trim())
+        .filter(part => part.length > 0);
+      console.log('Parties détectées (2ème essai):', retryParts);
+
+      if (!retryParts || retryParts.length !== 3) {
+        throw new Error('L\'histoire n\'a pas été correctement divisée en trois parties, même après une seconde tentative');
+      }
+
+      // Utiliser les parties du second essai si elles sont valides
+      storyParts = retryParts;
+    } else {
+      storyParts = parts;
     }
-
-    if (!storyData.choices?.[0]?.message?.content) {
-      console.error('Invalid story response format:', storyData);
-      throw new Error('Invalid response format from story API');
-    }
-
-    let storyText = storyData.choices[0].message.content;
-    
-    // Nettoyer le texte pour s'assurer qu'il commence par PARTIE 1:
-    storyText = storyText.replace(/^[\s\S]*?(PARTIE 1:)/, '$1');
-    console.log('Generated story text:', storyText);
-
-    // Diviser l'histoire en parties
-    const parts = storyText.match(/PARTIE [1-3]:([\s\S]*?)(?=PARTIE [1-3]:|$)/g);
-    const storyParts: string[] = parts ? parts.map((part: string) => 
-      part.replace(/PARTIE [1-3]:/, '').trim()
-    ) : [];
-
-    console.log('Parsed story parts:', storyParts);
 
     if (storyParts.length !== 3) {
       throw new Error('L\'histoire n\'a pas été correctement divisée en trois parties');
     }
     
-    // Générer une illustration pour chaque partie avec Hugging Face
+    // Générer une illustration pour chaque partie avec un meilleur modèle
     const illustrations = await Promise.all(
       storyParts.map(async (part: string, index: number) => {
-        console.log(`Generating image for part ${index + 1} with Hugging Face`);
+        console.log(`Génération de l'image pour la partie ${index + 1}`);
         
-        const imagePrompt = `children's book illustration, ${characters} in a ${theme} scene, ${part.substring(0, 100)}..., colorful, cute, child-friendly, cartoon style, vibrant colors, digital art, high quality`;
+        const imagePrompt = `children's book illustration of ${characters} in ${theme}, ${part.substring(0, 100)}..., colorful, cute, child-friendly, cartoon style, vibrant colors, digital art, high quality, children's book style, disney pixar style`;
 
         try {
-          // Générer l'image avec Stable Diffusion via Hugging Face
           const image = await hf.textToImage({
-            model: "stabilityai/stable-diffusion-xl-base-1.0",
+            model: "runwayml/stable-diffusion-v1-5",
             inputs: imagePrompt,
             parameters: {
-              num_inference_steps: 30,
+              num_inference_steps: 50,
               guidance_scale: 7.5,
-              negative_prompt: "ugly, blurry, poor quality, dark, scary, realistic, photographic",
+              negative_prompt: "ugly, blurry, poor quality, dark, scary, realistic, photographic, text, watermark, signature, bad anatomy, bad proportions",
             }
           });
 
-          // Convertir le blob en base64
+          if (!image) {
+            throw new Error('La génération de l\'image a échoué');
+          }
+
           const buffer = Buffer.from(await image.arrayBuffer());
           const base64 = buffer.toString('base64');
-          const imageUrl = `data:image/jpeg;base64,${base64}`;
-
-          return imageUrl;
+          return `data:image/jpeg;base64,${base64}`;
         } catch (error: any) {
-          console.error(`Error generating image for part ${index + 1}:`, error);
-          // En cas d'erreur, utiliser une image placeholder
-          return `https://placehold.co/1024x1024.png/FFB6C1/333333?text=Illustration+${index + 1}`;
+          console.error(`Erreur lors de la génération de l'image ${index + 1}:`, error);
+          // Utiliser une URL d'image de placeholder plus fiable
+          return `https://via.placeholder.com/1024x1024/FFB6C1/333333.png?text=Illustration+${index + 1}`;
         }
       })
     );
@@ -145,13 +161,13 @@ PARTIE 3: [texte de la troisième partie]`;
       message: "Histoire et illustrations générées avec succès." 
     });
   } catch (error: any) {
-    console.error('Error generating content:', error);
+    console.error('Erreur lors de la génération du contenu:', error);
     return NextResponse.json(
       { 
-        error: 'Failed to generate content', 
-        details: error?.message || 'Unknown error'
+        error: 'Erreur lors de la génération du contenu', 
+        details: error?.message || 'Erreur inconnue'
       },
       { status: 500 }
     );
   }
-} 
+}
