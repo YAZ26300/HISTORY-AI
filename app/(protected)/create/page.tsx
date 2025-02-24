@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Select, TextField, TextArea, Button, Card, Heading, Text, Flex, Box } from '@radix-ui/themes';
 import { Wand2 } from 'lucide-react';
-import { Vortex } from '../components/ui/vortex';
-import { SpotlightButton } from '../components/ui/spotlight-button';
+import { Vortex } from '../../../app/components/ui/vortex';
+import { SpotlightButton } from '../../../app/components/ui/spotlight-button';
 
 interface StoryPart {
   text: string;
@@ -319,4 +319,4 @@ export default function CreateStory() {
       </div>
     </Flex>
   );
-} 
+}
