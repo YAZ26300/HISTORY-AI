@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
+import { usePathname, useRouter } from 'next/navigation';
+import { createBrowserSupabaseClient } from '../../lib/supabase';
 import { Home, PenTool, BookOpen, LogOut } from 'lucide-react';
 
 export default function ProtectedLayout({
@@ -12,15 +12,17 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(true);
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createBrowserSupabaseClient();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/';
+    try {
+      // Rediriger vers la page de déconnexion qui effectuera une déconnexion complète
+      window.location.href = '/auth/logout';
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    }
   };
 
   const navItems = [
@@ -30,23 +32,23 @@ export default function ProtectedLayout({
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[var(--background-color)]">
       {/* Sidebar */}
       <aside
         className={`${
           isOpen ? 'w-64' : 'w-20'
-        } bg-white border-r border-gray-200 transition-all duration-300 ease-in-out`}
+        } bg-[var(--card-background)] border-r border-[var(--border-color)] transition-all duration-300 ease-in-out`}
       >
         <div className="h-full flex flex-col">
           <div className="h-16 flex items-center justify-between px-4">
             {isOpen ? (
-              <h2 className="text-xl font-bold">History AI</h2>
+              <h2 className="text-xl font-bold text-[var(--text-color)]">History AI</h2>
             ) : (
-              <h2 className="text-xl font-bold">HA</h2>
+              <h2 className="text-xl font-bold text-[var(--text-color)]">HA</h2>
             )}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-lg hover:bg-gray-100"
+              className="p-2 rounded-lg hover:bg-[var(--hover-color)] text-[var(--text-color)]"
             >
               <svg
                 className="w-6 h-6"
@@ -71,10 +73,10 @@ export default function ProtectedLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center px-4 py-3 mb-2 rounded-lg transition-colors ${
+                  className={`flex items-center px-4 py-3 mb-2 rounded-lg transition-colors text-[var(--text-color)] ${
                     pathname === item.href
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'hover:bg-gray-100'
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : 'hover:bg-[var(--hover-color)]'
                   }`}
                 >
                   <Icon className="w-6 h-6" />
@@ -84,10 +86,10 @@ export default function ProtectedLayout({
             })}
           </nav>
 
-          <div className="p-4 border-t">
+          <div className="p-4 border-t border-[var(--border-color)]">
             <button
               onClick={handleSignOut}
-              className={`flex items-center px-4 py-3 w-full rounded-lg text-gray-600 hover:bg-gray-100 transition-colors`}
+              className={`flex items-center px-4 py-3 w-full rounded-lg text-[var(--text-color)] hover:bg-[var(--hover-color)] transition-colors`}
             >
               <LogOut className="w-6 h-6" />
               {isOpen && <span className="ml-3">Déconnexion</span>}

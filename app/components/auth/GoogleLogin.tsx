@@ -1,16 +1,13 @@
 'use client';
 
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserSupabaseClient } from '../../../lib/supabase';
 
 interface GoogleLoginProps {
   redirectUrl?: string;
 }
 
 export default function GoogleLogin({ redirectUrl = '/dashboard' }: GoogleLoginProps) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = createBrowserSupabaseClient();
 
   const handleGoogleLogin = async () => {
     try {

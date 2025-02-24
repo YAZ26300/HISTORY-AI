@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
+import { createBrowserSupabaseClient } from '../../../lib/supabase';
 import GoogleLogin from '../../components/auth/GoogleLogin';
 import EmailAuth from '../../components/auth/EmailAuth';
 
@@ -10,21 +10,53 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [authMethod, setAuthMethod] = useState<'email' | 'google'>('email');
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const [loading, setLoading] = useState(true);
+  const supabase = createBrowserSupabaseClient();
 
   useEffect(() => {
-    checkUser();
+    // Nettoyer les données d'authentification existantes au chargement de la page
+    const cleanupAuth = async () => {
+      try {
+        // Vérifier s'il y a une session existante
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        // Si nous sommes sur la page de connexion et qu'une session existe déjà,
+        // vérifier si nous devons rediriger ou nettoyer
+        if (session && !error) {
+          console.log('Session existante détectée');
+          const redirect = searchParams.get('redirect') || '/dashboard';
+          router.push(redirect);
+          return;
+        }
+        
+        // Nettoyage des cookies et du stockage local
+        console.log('Nettoyage des données d\'authentification');
+        localStorage.removeItem('supabase.auth.token');
+        localStorage.removeItem('supabase.auth.refreshToken');
+        
+        document.cookie.split(";").forEach((c) => {
+          if (c.includes('sb-') || c.includes('supabase')) {
+            document.cookie = c
+              .replace(/^ +/, "")
+              .replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
+          }
+        });
+      } catch (error) {
+        console.error('Erreur lors du nettoyage:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cleanupAuth();
   }, []);
 
-  async function checkUser() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const redirect = searchParams.get('redirect') || '/dashboard';
-      router.push(redirect);
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="w-12 h-12 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   const redirectUrl = searchParams.get('redirect') || '/dashboard';
