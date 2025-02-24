@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ColourfulText } from './components/ui/colourful-text';
 import { SpotlightButton } from './components/ui/spotlight-button';
+import { SpotlightCard } from './components/ui/spotlight-card';
 
 export default function Home() {
   return (
@@ -41,47 +42,26 @@ export default function Home() {
           Comment ça <ColourfulText text="fonctionne" /> ?
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <motion.div 
-            className="card"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <div className="text-4xl mb-4">✍️</div>
-            <h3 className="text-xl font-semibold mb-2">1. Choisissez un thème</h3>
-            <p className="text-gray-400">
-              Sélectionnez le sujet de votre histoire et l'âge de votre enfant
-            </p>
-          </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-7xl mx-auto">
+          <SpotlightCard spotlightColor="rgba(56, 189, 248, 0.3)" className="flex flex-col items-center text-center p-10">
+            <div className="text-6xl mb-6">🎨</div>
+            <h3 className="text-2xl font-semibold mb-4">1. Choisissez votre thème</h3>
+            <p className="text-lg text-gray-400">Sélectionnez le sujet de votre histoire et l'âge de votre enfant</p>
+          </SpotlightCard>
 
-          <motion.div 
-            className="card"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <div className="text-4xl mb-4">🎨</div>
-            <h3 className="text-xl font-semibold mb-2">2. Personnalisez</h3>
-            <p className="text-gray-400">
-              Ajoutez vos personnages et laissez libre cours à votre imagination
-            </p>
-          </motion.div>
+          <SpotlightCard spotlightColor="rgba(168, 85, 247, 0.3)" className="flex flex-col items-center text-center p-10">
+            <div className="text-6xl mb-6">✏️</div>
+            <h3 className="text-2xl font-semibold mb-4">2. Personnalisez</h3>
+            <p className="text-lg text-gray-400">Ajoutez vos personnages et laissez libre cours à votre imagination</p>
+          </SpotlightCard>
 
-          <motion.div 
-            className="card"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <div className="text-4xl mb-4">✨</div>
-            <h3 className="text-xl font-semibold mb-2">3. Créez la magie</h3>
-            <p className="text-gray-400">
-              L'IA génère une histoire unique avec de magnifiques illustrations
-            </p>
-          </motion.div>
+          <SpotlightCard spotlightColor="rgba(244, 63, 94, 0.3)" className="flex flex-col items-center text-center p-10">
+            <div className="text-6xl mb-6">✨</div>
+            <h3 className="text-2xl font-semibold mb-4">3. Créez la magie</h3>
+            <p className="text-lg text-gray-400">L'IA génère une histoire unique avec de magnifiques illustrations</p>
+          </SpotlightCard>
         </div>
       </div>
     </div>
   );
-}
+} 
