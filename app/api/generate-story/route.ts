@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { theme, age, characters } = await request.json();
+    const { theme, age, characters, imageStyle } = await request.json();
 
     // Amélioration du prompt pour forcer le français et la structure
     const storyPrompt = `Crée une histoire pour enfants de ${age} ans sur le thème "${theme}" avec les personnages suivants: ${characters}.
@@ -122,7 +122,30 @@ PARTIE 3: [histoire]`;
       storyParts.map(async (part: string, index: number) => {
         console.log(`Génération de l'image pour la partie ${index + 1}`);
         
-        const imagePrompt = `children's book illustration of ${characters} in ${theme}, ${part.substring(0, 100)}..., colorful, cute, child-friendly, cartoon style, vibrant colors, digital art, high quality, children's book style, disney pixar style`;
+        // Adapter le prompt en fonction du style choisi
+        let stylePrompt = "children's book style";
+        
+        switch(imageStyle) {
+          case 'disney':
+            stylePrompt = "disney animation style, colorful, cute";
+            break;
+          case 'pixar':
+            stylePrompt = "pixar animation style, 3D, detailed, vibrant";
+            break;
+          case 'watercolor':
+            stylePrompt = "watercolor illustration, soft colors, hand-painted, artistic";
+            break;
+          case 'cartoon':
+            stylePrompt = "cartoon style, flat colors, simple, cute";
+            break;
+          case 'storybook':
+            stylePrompt = "traditional storybook illustration, detailed, warm colors";
+            break;
+          default:
+            stylePrompt = "children's book style, disney pixar style"; 
+        }
+        
+        const imagePrompt = `children's book illustration of ${characters} in ${theme}, ${part.substring(0, 100)}..., ${stylePrompt}, child-friendly, vibrant colors, digital art, high quality`;
 
         try {
           const image = await hf.textToImage({

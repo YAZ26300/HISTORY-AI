@@ -176,9 +176,10 @@ const StoryDisplay = ({
 
 export default function CreateStory() {
   const [theme, setTheme] = useState('');
-  const [age, setAge] = useState('');
+  const [age, setAge] = useState('7-9');
   const [title, setTitle] = useState('');
   const [characters, setCharacters] = useState('');
+  const [imageStyle, setImageStyle] = useState('disney');
   const [isLoading, setIsLoading] = useState(false);
   const [storyParts, setStoryParts] = useState<StoryPart[]>([]);
   const [error, setError] = useState('');
@@ -222,6 +223,7 @@ export default function CreateStory() {
           theme,
           age,
           characters,
+          imageStyle,
         }),
       });
 
@@ -364,6 +366,24 @@ export default function CreateStory() {
                     <Badge size="1" className="mt-2" variant="soft" color="gray">{themeOption.category}</Badge>
                   </div>
                 ))}
+              </div>
+              
+              <div className="space-y-2 mt-3">
+                <label htmlFor="imageStyle" className="block text-sm font-medium text-[var(--text-color)]">
+                  Style des illustrations
+                </label>
+                <select
+                  id="imageStyle"
+                  value={imageStyle}
+                  onChange={(e) => setImageStyle(e.target.value)}
+                  className="w-full px-3 py-2 border border-[var(--border-color)] rounded-md bg-[var(--card-background)] text-[var(--text-color)] shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="disney">Style Disney</option>
+                  <option value="pixar">Style Pixar</option>
+                  <option value="watercolor">Aquarelle</option>
+                  <option value="cartoon">Dessin animé</option>
+                  <option value="storybook">Livre d'images traditionnel</option>
+                </select>
               </div>
               
               {/* Option pour un thème personnalisé */}
