@@ -34,10 +34,18 @@ export async function POST(request: Request) {
     // Créer un client Supabase côté serveur avec la clé anonyme
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    console.log('URL Supabase:', supabaseUrl);
+    console.log('Clé utilisée:', supabaseAnonKey ? 'Définie' : 'Non définie');
+    
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     // Vérifier si le bucket existe
     const bucketName = 'story-pdfs';
+    
+    // Contourner la vérification du bucket pour tester directement
+    console.log('DEBUG: Tentative d\'utilisation directe du bucket:', bucketName);
+    
+    /* Commenté pour contourner la vérification
     const { data: bucket, error: bucketError } = await supabase.storage.getBucket(bucketName);
     
     if (bucketError && bucketError.message.includes('Bucket not found')) {
@@ -61,8 +69,10 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+    */
 
     // Générer le PDF
+    console.log('DEBUG: Génération du PDF...');
     const doc = new jsPDF();
     let yPosition = 20;
     
@@ -136,93 +146,126 @@ export async function POST(request: Request) {
     const pdfPath = `${userId}/${timestamp}_${safeTitle}.pdf`;
     
     // Télécharger le PDF dans Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from(bucketName)
-      .upload(pdfPath, buffer, {
-        contentType: 'application/pdf',
-        cacheControl: '3600',
-      });
+    console.log('DEBUG: Tentative de téléchargement du PDF dans le bucket:', bucketName);
+    console.log('DEBUG: Chemin du fichier:', pdfPath);
     
-    if (uploadError) {
-      console.error('Erreur lors du téléchargement du PDF:', uploadError);
+    try {
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from(bucketName)
+        .upload(pdfPath, buffer, {
+          contentType: 'application/pdf',
+          cacheControl: '3600',
+        });
       
-      if (uploadError.message.includes('row-level security policy')) {
+      console.log('DEBUG: Résultat upload:', uploadError ? 'Erreur' : 'Succès', uploadData);
+      
+      if (uploadError) {
+        console.error('Erreur lors du téléchargement du PDF:', uploadError);
+        
+        if (uploadError.message.includes('row-level security policy')) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: 'Erreur de permission',
+              details: 'Vous n\'avez pas les droits nécessaires pour télécharger des fichiers. Veuillez vérifier les politiques RLS dans Supabase.'
+            },
+            { status: 403 }
+          );
+        }
+        
         return NextResponse.json(
           { 
             success: false, 
-            error: 'Erreur de permission',
-            details: 'Vous n\'avez pas les droits nécessaires pour télécharger des fichiers. Veuillez vérifier les politiques RLS dans Supabase.'
+            error: 'Erreur lors du téléchargement du PDF',
+            details: uploadError?.message || 'Erreur inconnue'
           },
-          { status: 403 }
+          { status: 500 }
         );
       }
-      
+    } catch (uploadCatchError: any) {
+      console.error('Exception lors du téléchargement:', uploadCatchError);
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Erreur lors du téléchargement du PDF',
-          details: uploadError?.message || 'Erreur inconnue'
+          error: 'Exception lors du téléchargement',
+          details: uploadCatchError.message || 'Erreur non identifiée'
         },
         { status: 500 }
       );
     }
     
     // Récupérer l'URL publique du PDF
+    console.log('DEBUG: Récupération de l\'URL publique');
     const { data: { publicUrl } } = supabase.storage
       .from(bucketName)
       .getPublicUrl(pdfPath);
     
     // Enregistrer les métadonnées dans la table stories
-    const { error: dbError } = await supabase
-      .from('stories')
-      .insert({
-        user_id: userId,
-        title,
-        theme,
-        age_range: ageRange,
-        pdf_path: pdfPath,
-      });
-    
-    if (dbError) {
-      console.error('Erreur lors de l\'enregistrement des métadonnées:', dbError);
+    console.log('DEBUG: Enregistrement des métadonnées dans la base de données');
+    try {
+      const { error: dbError } = await supabase
+        .from('stories')
+        .insert({
+          user_id: userId,
+          title,
+          theme,
+          age_range: ageRange,
+          pdf_path: pdfPath,
+        });
       
-      // Si l'erreur est due à la politique RLS
-      if (dbError.message.includes('row-level security policy')) {
+      if (dbError) {
+        console.error('Erreur lors de l\'enregistrement des métadonnées:', dbError);
+        
+        // Si l'erreur est due à la politique RLS
+        if (dbError.message.includes('row-level security policy')) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Erreur de permission',
+              details: 'Vous n\'avez pas les droits nécessaires pour insérer des données. Veuillez vérifier les politiques RLS dans Supabase.',
+              pdfUrl: publicUrl // On renvoie quand même l'URL du PDF
+            },
+            { status: 403 }
+          );
+        }
+        
+        // Si la table n'existe pas
+        if (dbError.message.includes('relation "stories" does not exist')) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Table manquante',
+              details: 'La table "stories" n\'existe pas. Veuillez exécuter le script de création des tables dans Supabase.',
+              pdfUrl: publicUrl // On renvoie quand même l'URL du PDF
+            },
+            { status: 500 }
+          );
+        }
+        
         return NextResponse.json(
           { 
-            success: false,
-            error: 'Erreur de permission',
-            details: 'Vous n\'avez pas les droits nécessaires pour insérer des données. Veuillez vérifier les politiques RLS dans Supabase.',
-            pdfUrl: publicUrl // On renvoie quand même l'URL du PDF
-          },
-          { status: 403 }
-        );
-      }
-      
-      // Si la table n'existe pas
-      if (dbError.message.includes('relation "stories" does not exist')) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Table manquante',
-            details: 'La table "stories" n\'existe pas. Veuillez exécuter le script de création des tables dans Supabase.',
+            success: false, 
+            error: 'Erreur lors de l\'enregistrement des métadonnées',
+            details: dbError?.message || 'Erreur inconnue',
             pdfUrl: publicUrl // On renvoie quand même l'URL du PDF
           },
           { status: 500 }
         );
       }
-      
+    } catch (dbCatchError: any) {
+      console.error('Exception lors de l\'accès à la base de données:', dbCatchError);
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Erreur lors de l\'enregistrement des métadonnées',
-          details: dbError?.message || 'Erreur inconnue',
+          error: 'Exception lors de l\'accès à la base de données',
+          details: dbCatchError.message || 'Erreur non identifiée',
           pdfUrl: publicUrl // On renvoie quand même l'URL du PDF
         },
         { status: 500 }
       );
     }
     
+    console.log('DEBUG: Tout s\'est bien passé!');
     return NextResponse.json({
       success: true,
       message: 'Histoire sauvegardée avec succès',
