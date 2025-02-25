@@ -12,6 +12,81 @@ CREATE TABLE IF NOT EXISTS public.stories (
   CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
+-- Nouvelle table pour stocker les parties d'histoire pour la vue livre
+CREATE TABLE IF NOT EXISTS public.story_parts (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  story_id UUID NOT NULL,
+  part_number INTEGER NOT NULL,
+  text_content TEXT NOT NULL,
+  image_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  
+  -- Contrainte de clé étrangère pour lier à la table des histoires
+  CONSTRAINT fk_story FOREIGN KEY (story_id) REFERENCES public.stories(id) ON DELETE CASCADE,
+  
+  -- Contrainte d'unicité pour éviter les doublons (une histoire ne peut pas avoir deux parties avec le même numéro)
+  UNIQUE(story_id, part_number)
+);
+
+-- Politiques RLS pour la table story_parts
+ALTER TABLE public.story_parts ENABLE ROW LEVEL SECURITY;
+
+-- Supprimer les politiques existantes si elles existent
+DROP POLICY IF EXISTS "Users can view their own story parts" ON public.story_parts;
+DROP POLICY IF EXISTS "Users can insert parts for their own stories" ON public.story_parts;
+DROP POLICY IF EXISTS "Users can update parts for their own stories" ON public.story_parts;
+DROP POLICY IF EXISTS "Users can delete parts for their own stories" ON public.story_parts;
+
+-- Politique pour permettre aux utilisateurs authentifiés de lire leurs propres parties d'histoire
+CREATE POLICY "Users can view their own story parts" 
+  ON public.story_parts 
+  FOR SELECT 
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.stories s 
+      WHERE s.id = story_parts.story_id AND s.user_id = auth.uid()
+    )
+  );
+
+-- Politique pour permettre aux utilisateurs authentifiés d'insérer leurs propres parties d'histoire
+CREATE POLICY "Users can insert parts for their own stories" 
+  ON public.story_parts 
+  FOR INSERT 
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.stories s 
+      WHERE s.id = story_parts.story_id AND s.user_id = auth.uid()
+    )
+  );
+
+-- Politique pour permettre aux utilisateurs authentifiés de mettre à jour leurs propres parties d'histoire
+CREATE POLICY "Users can update parts for their own stories" 
+  ON public.story_parts 
+  FOR UPDATE 
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.stories s 
+      WHERE s.id = story_parts.story_id AND s.user_id = auth.uid()
+    )
+  );
+
+-- Politique pour permettre aux utilisateurs authentifiés de supprimer leurs propres parties d'histoire
+CREATE POLICY "Users can delete parts for their own stories" 
+  ON public.story_parts 
+  FOR DELETE 
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.stories s 
+      WHERE s.id = story_parts.story_id AND s.user_id = auth.uid()
+    )
+  );
+
+-- Créer un index sur story_id pour accélérer les requêtes
+CREATE INDEX IF NOT EXISTS idx_story_parts_story_id ON public.story_parts(story_id);
+
+-- Créer un index sur part_number pour les tris
+CREATE INDEX IF NOT EXISTS idx_story_parts_part_number ON public.story_parts(part_number);
+
 -- Politiques RLS (Row Level Security) pour la table stories
 -- Permet aux utilisateurs de voir uniquement leurs propres histoires
 ALTER TABLE public.stories ENABLE ROW LEVEL SECURITY;

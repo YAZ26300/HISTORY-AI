@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Home, PenTool, Menu, X } from 'lucide-react';
 import { SpotlightButton } from './components/ui/spotlight-button';
+import { Toaster } from 'react-hot-toast';
 
 export default function RootLayoutClient({
   children,
@@ -15,6 +16,9 @@ export default function RootLayoutClient({
 
   return (
     <div className="min-h-screen flex">
+      {/* Toaster pour les notifications */}
+      <Toaster position="top-right" />
+      
       {/* Mobile Menu Button */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <SpotlightButton

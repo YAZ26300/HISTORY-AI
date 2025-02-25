@@ -1,6 +1,7 @@
 /** @type {import('next').Config} */
 const config = {
   images: {
+    domains: ['sxfiercxweagojpimobv.supabase.co'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -13,6 +14,10 @@ const config = {
       {
         protocol: 'https',
         hostname: 'api.dicebear.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
       },
     ],
     dangerouslyAllowSVG: true,

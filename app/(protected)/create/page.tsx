@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, Heading, Text, Flex, Box, Badge } from '@radix-ui/themes';
-import { Wand2, Save, Download, Check, Sparkles } from 'lucide-react';
+import { Wand2, Save, Download, Check, Sparkles, BookOpen } from 'lucide-react';
 import { Vortex } from '../../../app/components/ui/vortex';
 import { SpotlightButton } from '../../../app/components/ui/spotlight-button';
 import { SpotlightCard } from '../../../app/components/ui/spotlight-card';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
+import LoadingStory from '../../components/LoadingStory';
+import BookView from '../../components/stories/BookView';
 
 interface StoryPart {
   text: string;
@@ -75,44 +77,6 @@ const StepIndicator = ({ step, currentStep, title, description }: {
   );
 };
 
-const LoadingStory = () => {
-  return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center mb-6">
-        <div className="h-8 w-48 bg-[var(--card-background)] animate-pulse rounded-md"></div>
-        <div className="h-10 w-40 bg-[var(--card-background)] animate-pulse rounded-md"></div>
-      </div>
-
-      <div className="space-y-10 my-8">
-        {[1, 2, 3].map((part) => (
-          <motion.div
-            key={part}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: part * 0.2 }}
-            className="space-y-6"
-          >
-            <SpotlightCard className="p-6 flex flex-col gap-3" spotlightColor="rgba(59, 130, 246, 0.2)">
-              <div className="h-5 w-24 bg-blue-500/20 animate-pulse rounded-full"></div>
-              <div className="space-y-2">
-                <div className="h-4 w-full bg-[var(--card-background)] animate-pulse rounded-md"></div>
-                <div className="h-4 w-full bg-[var(--card-background)] animate-pulse rounded-md"></div>
-                <div className="h-4 w-3/4 bg-[var(--card-background)] animate-pulse rounded-md"></div>
-              </div>
-            </SpotlightCard>
-            
-            <SpotlightCard className="overflow-hidden" spotlightColor="rgba(139, 92, 246, 0.2)">
-              <div className="w-full h-64 lg:h-80 bg-[var(--card-background)] animate-pulse flex items-center justify-center">
-                <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-              </div>
-            </SpotlightCard>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 const StoryDisplay = ({ 
   storyParts, 
   onSave, 
@@ -124,22 +88,45 @@ const StoryDisplay = ({
   isSaving: boolean,
   isSaved: boolean
 }) => {
+  const [isBookViewOpen, setIsBookViewOpen] = useState(false);
+  const [storyTitle, setStoryTitle] = useState("Histoire Magique");
+
+  useEffect(() => {
+    // Extraction d'un titre basé sur la première partie
+    if (storyParts.length > 0 && storyParts[0].text) {
+      // Récupérer la première phrase ou une portion du texte pour le titre
+      const firstPart = storyParts[0].text;
+      const firstSentence = firstPart.split('.')[0].trim();
+      setStoryTitle(firstSentence.length > 50 
+        ? firstSentence.substring(0, 50) + '...' 
+        : firstSentence);
+    }
+  }, [storyParts]);
+
   return (
     <div className="space-y-6 lg:space-y-8">
       <div className="flex justify-between items-center mb-6">
         <Heading size="6" className="text-[var(--text-color)]">Votre Histoire Magique</Heading>
         
-        <SpotlightButton
-          text={isSaved ? 'Histoire sauvegardée' : isSaving ? 'Sauvegarde...' : 'Sauvegarder l\'histoire'}
-          icon={isSaved ? 
-            <Check size={16} /> : 
-            isSaving ? 
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 
-            <Save size={16} />
-          }
-          disabled={isSaving || isSaved}
-          onClick={onSave}
-        />
+        <div className="flex space-x-3">
+          <SpotlightButton
+            text="Lire en format livre"
+            icon={<BookOpen size={16} />}
+            onClick={() => setIsBookViewOpen(true)}
+          />
+          
+          <SpotlightButton
+            text={isSaved ? 'Histoire sauvegardée' : isSaving ? 'Sauvegarde...' : 'Sauvegarder l\'histoire'}
+            icon={isSaved ? 
+              <Check size={16} /> : 
+              isSaving ? 
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 
+              <Save size={16} />
+            }
+            disabled={isSaving || isSaved}
+            onClick={onSave}
+          />
+        </div>
       </div>
       
       <div className="space-y-10 my-8">{storyParts.map((part, index) => (
@@ -170,6 +157,17 @@ const StoryDisplay = ({
           </SpotlightCard>
         </motion.div>
       ))}</div>
+
+      {/* Modal de vue livre */}
+      <AnimatePresence>
+        {isBookViewOpen && (
+          <BookView 
+            storyParts={storyParts} 
+            title={storyTitle}
+            onClose={() => setIsBookViewOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -261,8 +259,11 @@ export default function CreateStory() {
       const optimizedStoryParts = storyParts.map(part => {
         // Si l'image est une URL (non base64), la conserver telle quelle
         if (!part.image.startsWith('data:image')) {
+          console.log('Image non base64 détectée:', part.image.substring(0, 50) + '...');
           return part;
         }
+        
+        console.log('Image base64 détectée, taille:', part.image.length);
         
         // Pour les images base64, conserver juste l'URL si elles sont trop grandes
         if (part.image.length > 500000) { // 500 KB limite
@@ -276,7 +277,7 @@ export default function CreateStory() {
         return part;
       });
       
-      console.log('Envoi de la requête de sauvegarde');
+      console.log('Envoi de la requête de sauvegarde avec', optimizedStoryParts.length, 'parties');
       const response = await fetch('/api/stories/save', {
         method: 'POST',
         headers: {
@@ -287,6 +288,7 @@ export default function CreateStory() {
           theme,
           age_range: age,
           images: optimizedStoryParts.map(part => part.image),
+          storyParts: optimizedStoryParts,
         }),
       });
       
