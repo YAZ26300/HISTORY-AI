@@ -10,6 +10,10 @@ const config = {
         protocol: 'https',
         hostname: '*.x.ai',
       },
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
+      },
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',

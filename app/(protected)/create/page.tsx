@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Select, TextField, TextArea, Button, Card, Heading, Text, Flex, Box } from '@radix-ui/themes';
-import { Wand2 } from 'lucide-react';
+import { Card, Heading, Text, Flex, Box } from '@radix-ui/themes';
+import { Wand2, Save, Download, Check } from 'lucide-react';
 import { Vortex } from '../../../app/components/ui/vortex';
 import { SpotlightButton } from '../../../app/components/ui/spotlight-button';
+import { createBrowserClient } from '@supabase/ssr';
+import { useRouter } from 'next/navigation';
 
 interface StoryPart {
   text: string;
@@ -19,6 +21,26 @@ interface StoryResponse {
   error?: string;
   details?: string;
 }
+
+interface SaveResponse {
+  success: boolean;
+  message: string;
+  pdfUrl?: string;
+  error?: string;
+  details?: string;
+}
+
+// Définir les thèmes disponibles
+const themes = {
+  "Aventure": ["Forêt enchantée", "Océan mystérieux", "Montagne magique", "Jungle sauvage", "Îles perdues"],
+  "Fantaisie": ["Dragons et chevaliers", "Fées et lutins", "Sorciers et potions", "Créatures mythiques", "Mondes parallèles"],
+  "Science-Fiction": ["Voyage spatial", "Robots et IA", "Civilisations extraterrestres", "Futur de la Terre", "Technologies magiques"],
+  "Animaux": ["Ferme joyeuse", "Animaux sauvages", "Vie marine", "Insectes curieux", "Animaux qui parlent"],
+  "Éducatif": ["Découverte de la nature", "Voyage dans le corps humain", "Histoire et civilisations", "Sciences amusantes", "Exploration géographique"]
+};
+
+// Définir les tranches d'âge
+const ageRanges = ["3-5 ans", "6-8 ans", "9-12 ans"];
 
 const StepIndicator = ({ step, currentStep, title, description }: {
   step: number;
@@ -111,10 +133,53 @@ const LoadingStory = () => {
   );
 };
 
-const StoryDisplay = ({ storyParts }: { storyParts: StoryPart[] }) => {
+const StoryDisplay = ({ 
+  storyParts, 
+  onSave, 
+  isSaving,
+  isSaved 
+}: { 
+  storyParts: StoryPart[], 
+  onSave: () => void, 
+  isSaving: boolean,
+  isSaved: boolean
+}) => {
   return (
     <div className="space-y-6 lg:space-y-8 p-4">
-      <Heading size="6">Votre Histoire</Heading>
+      <div className="flex justify-between items-center">
+        <Heading size="6">Votre Histoire</Heading>
+        
+        <button
+          onClick={onSave}
+          disabled={isSaving || isSaved}
+          className={`
+            flex items-center gap-2 px-4 py-2 rounded-lg transition-colors
+            ${isSaved 
+              ? 'bg-green-500 text-white' 
+              : isSaving 
+                ? 'bg-blue-300 text-white cursor-not-allowed' 
+                : 'bg-blue-500 text-white hover:bg-blue-600'
+            }
+          `}
+        >
+          {isSaved ? (
+            <>
+              <Check size={16} />
+              Sauvegardée
+            </>
+          ) : isSaving ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Sauvegarde...
+            </>
+          ) : (
+            <>
+              <Save size={16} />
+              Sauvegarder en PDF
+            </>
+          )}
+        </button>
+      </div>
       
       {storyParts.map((part, index) => (
         <motion.div
@@ -150,11 +215,32 @@ const StoryDisplay = ({ storyParts }: { storyParts: StoryPart[] }) => {
 export default function CreateStory() {
   const [theme, setTheme] = useState('');
   const [age, setAge] = useState('');
+  const [title, setTitle] = useState('');
   const [characters, setCharacters] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [storyParts, setStoryParts] = useState<StoryPart[]>([]);
   const [error, setError] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const router = useRouter();
+  
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  
+  useEffect(() => {
+    const getUserId = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setUserId(data.session.user.id);
+      }
+    };
+    
+    getUserId();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +248,7 @@ export default function CreateStory() {
     setError('');
     setStoryParts([]);
     setCurrentStep(1);
+    setIsSaved(false);
 
     try {
       const response = await fetch('/api/generate-story', {
@@ -185,12 +272,98 @@ export default function CreateStory() {
 
       setCurrentStep(3);
       setStoryParts(data.story);
+      
+      // Générer un titre pour l'histoire
+      const storyTitle = `Histoire de ${characters} dans ${theme}`;
+      setTitle(storyTitle);
+      
       setCurrentStep(4);
     } catch (error: any) {
       console.error('Error generating story:', error);
       setError(error.message || 'Une erreur est survenue lors de la création de l\'histoire');
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const handleSaveStory = async () => {
+    if (!userId || storyParts.length === 0 || isSaving) return;
+    
+    setIsSaving(true);
+    setError('');
+    
+    try {
+      // Préparation des données : réduire la taille des images base64 si nécessaire
+      const optimizedStoryParts = storyParts.map(part => {
+        // Si l'image est une URL (non base64), la conserver telle quelle
+        if (!part.image.startsWith('data:image')) {
+          return part;
+        }
+        
+        // Pour les images base64, conserver juste l'URL si elles sont trop grandes
+        if (part.image.length > 500000) { // 500 KB limite
+          console.log('Image trop volumineuse, utilisation du placeholder');
+          return {
+            ...part,
+            image: `https://via.placeholder.com/800x600/FFB6C1/333333.png?text=Illustration+Histoire`
+          };
+        }
+        
+        return part;
+      });
+      
+      console.log('Envoi de la requête de sauvegarde');
+      const response = await fetch('/api/stories/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: title || `Histoire de ${characters} dans ${theme}`,
+          theme,
+          ageRange: age,
+          storyParts: optimizedStoryParts,
+          userId,
+        }),
+      });
+      
+      // Vérifier si la réponse est JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Réponse non-JSON reçue: ${await response.text()}`);
+      }
+      
+      const data: SaveResponse = await response.json();
+      
+      if (!data.success) {
+        // Message personnalisé selon le type d'erreur
+        let errorMessage = data.error || 'Une erreur est survenue lors de la sauvegarde';
+        
+        if (data.details) {
+          errorMessage += `: ${data.details}`;
+        }
+        
+        // Instructions spécifiques pour les erreurs de RLS
+        if (data.error === 'Erreur de permission' || 
+            (data.details && data.details.includes('row-level security policy'))) {
+          errorMessage += "\n\nInstructions pour l'administrateur: Veuillez vérifier les politiques RLS dans Supabase pour la table 'stories' et le bucket 'story-pdfs'.";
+        }
+        
+        // Instructions spécifiques pour l'erreur de bucket manquant
+        if (data.error === 'Bucket de stockage non disponible') {
+          errorMessage += "\n\nPour créer le bucket dans Supabase:\n1. Allez dans la section Storage de votre projet Supabase\n2. Cliquez sur 'Nouveau bucket'\n3. Nommez-le 'story-pdfs'\n4. Assurez-vous que les politiques RLS sont configurées pour permettre aux utilisateurs authentifiés d'accéder à leurs fichiers";
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      setIsSaved(true);
+      router.push('/stories');
+    } catch (error: any) {
+      console.error('Error saving story:', error);
+      setError(error.message || 'Une erreur est survenue lors de la sauvegarde de l\'histoire');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -206,73 +379,81 @@ export default function CreateStory() {
           </Text>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <Card>
-              <Flex direction="column" gap="3">
-                <label className="font-medium" htmlFor="theme">
-                  Thème de l'histoire
-                </label>
-                <TextField.Root>
-                  <TextField.Slot>
-                    <input
-                      id="theme"
-                      type="text"
-                      placeholder="Ex: La forêt enchantée, L'espace, Les pirates..."
-                      value={theme}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTheme(e.target.value)}
-                      required
-                      className="w-full bg-transparent border-none focus:outline-none"
-                    />
-                  </TextField.Slot>
-                </TextField.Root>
-              </Flex>
-            </Card>
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Thème de l'histoire
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: La forêt enchantée, L'espace, Les pirates..."
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
 
-            <Card>
-              <Flex direction="column" gap="3">
-                <label className="font-medium" htmlFor="age">
-                  Âge de l'enfant
-                </label>
-                <Select.Root value={age} onValueChange={setAge} required>
-                  <Select.Trigger placeholder="Sélectionnez un âge" />
-                  <Select.Content>
-                    <Select.Group>
-                      <Select.Label>Tranches d'âge</Select.Label>
-                      <Select.Item value="3-5">3-5 ans</Select.Item>
-                      <Select.Item value="6-8">6-8 ans</Select.Item>
-                      <Select.Item value="9-12">9-12 ans</Select.Item>
-                    </Select.Group>
-                  </Select.Content>
-                </Select.Root>
-              </Flex>
-            </Card>
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Âge de l'enfant
+              </label>
+              <select
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Sélectionnez un âge</option>
+                {ageRanges.map((range) => (
+                  <option key={range} value={range}>
+                    {range}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <Card>
-              <Flex direction="column" gap="3">
-                <label className="font-medium" htmlFor="characters">
-                  Personnages principaux
-                </label>
-                <TextArea
-                  id="characters"
-                  placeholder="Décrivez les personnages de votre histoire..."
-                  value={characters}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCharacters(e.target.value)}
-                  required
-                />
-              </Flex>
-            </Card>
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Personnages principaux
+              </label>
+              <textarea
+                placeholder="Décrivez les personnages de votre histoire..."
+                value={characters}
+                onChange={(e) => setCharacters(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
+              />
+            </div>
 
-            <SpotlightButton
+            <button
+              type="submit"
               disabled={isLoading}
-              text={isLoading ? 'Création en cours...' : 'Créer l\'histoire'}
-              icon={<Wand2 className="w-4 h-4" />}
-              fullWidth
-            />
+              className={`
+                w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors
+                ${isLoading 
+                  ? 'bg-blue-300 text-white cursor-not-allowed' 
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                }
+              `}
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Création en cours...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4" />
+                  Créer l'histoire
+                </>
+              )}
+            </button>
           </form>
 
           {error && (
-            <Card className="mt-8 bg-red-500/10 border-red-500/50">
+            <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg">
               <Text color="red">{error}</Text>
-            </Card>
+            </div>
           )}
         </Card>
       </div>
@@ -290,7 +471,12 @@ export default function CreateStory() {
                 {isLoading ? (
                   <LoadingStory />
                 ) : (
-                  <StoryDisplay storyParts={storyParts} />
+                  <StoryDisplay 
+                    storyParts={storyParts} 
+                    onSave={handleSaveStory}
+                    isSaving={isSaving}
+                    isSaved={isSaved}
+                  />
                 )}
               </Card>
             </motion.div>
@@ -310,7 +496,12 @@ export default function CreateStory() {
                   Laissez votre imagination prendre vie et créez des histoires uniques pour vos enfants
                 </p>
                 <div className="flex flex-col sm:flex-row items-center gap-4 mt-6">
-                  <SpotlightButton text="Commencer l'aventure" />
+                  <button
+                    onClick={() => {}}
+                    className="px-6 py-3 rounded-lg bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-colors"
+                  >
+                    Commencer l'aventure
+                  </button>
                 </div>
               </Vortex>
             </div>

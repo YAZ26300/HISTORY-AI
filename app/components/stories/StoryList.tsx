@@ -51,8 +51,9 @@ export default function StoryList() {
 
   async function downloadPDF(pdfPath: string, title: string) {
     try {
+      const bucketName = 'story-pdfs';
       const { data, error } = await supabase.storage
-        .from('story-pdfs')
+        .from(bucketName)
         .download(pdfPath)
       
       if (error) throw error
