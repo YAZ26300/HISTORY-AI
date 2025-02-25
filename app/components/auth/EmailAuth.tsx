@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { createBrowserSupabaseClient } from '../../../lib/supabase';
+import { SpotlightButton } from '../ui/spotlight-button';
+import { LogIn, UserPlus, KeyRound } from 'lucide-react';
 
 interface EmailAuthProps {
   redirectUrl?: string;
@@ -86,7 +88,7 @@ export default function EmailAuth({ redirectUrl = '/dashboard' }: EmailAuthProps
       {mode === 'signin' && (
         <form onSubmit={handleSignIn} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-200">
               Email
             </label>
             <input
@@ -94,12 +96,12 @@ export default function EmailAuth({ redirectUrl = '/dashboard' }: EmailAuthProps
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
+              className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800/50 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               required
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-200">
               Mot de passe
             </label>
             <input
@@ -107,32 +109,34 @@ export default function EmailAuth({ redirectUrl = '/dashboard' }: EmailAuthProps
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
+              className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800/50 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               required
             />
           </div>
           {message && (
-            <p className="text-sm text-red-600">{message}</p>
+            <p className="text-sm text-red-400">{message}</p>
           )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-          >
-            {loading ? 'Connexion...' : 'Se connecter'}
-          </button>
+          <div onClick={(e) => e.preventDefault()}>
+            <SpotlightButton
+              text={loading ? 'Connexion...' : 'Se connecter'}
+              icon={<LogIn className="h-5 w-5" />}
+              disabled={loading}
+              onClick={() => handleSignIn(new Event('submit') as any)}
+              fullWidth={true}
+            />
+          </div>
           <div className="flex justify-between text-sm">
             <button
               type="button"
               onClick={() => setMode('signup')}
-              className="text-blue-600 hover:text-blue-800"
+              className="text-blue-400 hover:text-blue-300"
             >
               Créer un compte
             </button>
             <button
               type="button"
               onClick={() => setMode('reset')}
-              className="text-blue-600 hover:text-blue-800"
+              className="text-blue-400 hover:text-blue-300"
             >
               Mot de passe oublié ?
             </button>
@@ -143,7 +147,7 @@ export default function EmailAuth({ redirectUrl = '/dashboard' }: EmailAuthProps
       {mode === 'signup' && (
         <form onSubmit={handleSignUp} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-200">
               Email
             </label>
             <input
@@ -151,12 +155,12 @@ export default function EmailAuth({ redirectUrl = '/dashboard' }: EmailAuthProps
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
+              className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800/50 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               required
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-200">
               Mot de passe
             </label>
             <input
@@ -164,27 +168,29 @@ export default function EmailAuth({ redirectUrl = '/dashboard' }: EmailAuthProps
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
+              className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800/50 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               required
             />
           </div>
           {message && (
-            <p className={`text-sm ${message.includes('Vérifiez') ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-sm ${message.includes('Vérifiez') ? 'text-green-400' : 'text-red-400'}`}>
               {message}
             </p>
           )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-          >
-            {loading ? 'Inscription...' : 'S\'inscrire'}
-          </button>
+          <div onClick={(e) => e.preventDefault()}>
+            <SpotlightButton
+              text={loading ? 'Inscription...' : 'S\'inscrire'}
+              icon={<UserPlus className="h-5 w-5" />}
+              disabled={loading}
+              onClick={() => handleSignUp(new Event('submit') as any)}
+              fullWidth={true}
+            />
+          </div>
           <div className="text-center">
             <button
               type="button"
               onClick={() => setMode('signin')}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-blue-400 hover:text-blue-300"
             >
               Déjà un compte ? Se connecter
             </button>
@@ -195,7 +201,7 @@ export default function EmailAuth({ redirectUrl = '/dashboard' }: EmailAuthProps
       {mode === 'reset' && (
         <form onSubmit={handleResetPassword} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-200">
               Email
             </label>
             <input
@@ -203,27 +209,29 @@ export default function EmailAuth({ redirectUrl = '/dashboard' }: EmailAuthProps
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
+              className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800/50 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               required
             />
           </div>
           {message && (
-            <p className={`text-sm ${message.includes('Vérifiez') ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-sm ${message.includes('Vérifiez') ? 'text-green-400' : 'text-red-400'}`}>
               {message}
             </p>
           )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-          >
-            {loading ? 'Envoi...' : 'Réinitialiser le mot de passe'}
-          </button>
+          <div onClick={(e) => e.preventDefault()}>
+            <SpotlightButton
+              text={loading ? 'Envoi...' : 'Réinitialiser le mot de passe'}
+              icon={<KeyRound className="h-5 w-5" />}
+              disabled={loading}
+              onClick={() => handleResetPassword(new Event('submit') as any)}
+              fullWidth={true}
+            />
+          </div>
           <div className="text-center">
             <button
               type="button"
               onClick={() => setMode('signin')}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-blue-400 hover:text-blue-300"
             >
               Retour à la connexion
             </button>

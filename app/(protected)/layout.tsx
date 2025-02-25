@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '../../lib/supabase';
 import { Home, PenTool, BookOpen, LogOut, User } from 'lucide-react';
+import { SpotlightButton } from '../../app/components/ui/spotlight-button';
 
 // Composant pour afficher l'avatar et l'email de l'utilisateur
 const UserProfile = () => {
@@ -140,24 +141,25 @@ export default function ProtectedLayout({
           ) : (
             <h2 className="text-xl font-bold text-[var(--text-color)]">HA</h2>
           )}
-          <button
+          <SpotlightButton
+            icon={
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d={isOpen ? "M15 19l-7-7 7-7" : "M9 19l7-7-7-7"}
+                />
+              </svg>
+            }
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 rounded-lg hover:bg-[var(--hover-color)] text-[var(--text-color)]"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d={isOpen ? "M15 19l-7-7 7-7" : "M9 19l7-7-7-7"}
-              />
-            </svg>
-          </button>
+            text=""
+          />
         </div>
 
         <nav className="flex-1 px-2 py-4 overflow-y-auto">
@@ -184,13 +186,12 @@ export default function ProtectedLayout({
         {isOpen && <UserProfile />}
 
         <div className="p-4">
-          <button
+          <SpotlightButton
+            text={isOpen ? "Déconnexion" : ""}
+            icon={<LogOut className="w-5 h-5" />}
             onClick={handleSignOut}
-            className={`flex items-center px-4 py-3 w-full rounded-lg text-[var(--text-color)] hover:bg-[var(--hover-color)] transition-colors`}
-          >
-            <LogOut className="w-6 h-6" />
-            {isOpen && <span className="ml-3">Déconnexion</span>}
-          </button>
+            fullWidth={true}
+          />
         </div>
       </aside>
 

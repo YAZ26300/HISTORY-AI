@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Home, PenTool, Menu, X } from 'lucide-react';
+import { SpotlightButton } from './components/ui/spotlight-button';
 
 export default function RootLayoutClient({
   children,
@@ -15,16 +16,13 @@ export default function RootLayoutClient({
   return (
     <div className="min-h-screen flex">
       {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 transition-colors"
-      >
-        {isSidebarOpen ? (
-          <X className="w-6 h-6 text-blue-500" />
-        ) : (
-          <Menu className="w-6 h-6 text-blue-500" />
-        )}
-      </button>
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <SpotlightButton
+          icon={isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          text=""
+        />
+      </div>
 
       {/* Sidebar Overlay */}
       <AnimatePresence>

@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, Heading, Text, Flex, Box } from '@radix-ui/themes';
-import { Wand2, Save, Download, Check } from 'lucide-react';
+import { Card, Heading, Text, Flex, Box, Badge } from '@radix-ui/themes';
+import { Wand2, Save, Download, Check, Sparkles } from 'lucide-react';
 import { Vortex } from '../../../app/components/ui/vortex';
 import { SpotlightButton } from '../../../app/components/ui/spotlight-button';
+import { SpotlightCard } from '../../../app/components/ui/spotlight-card';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 
@@ -30,14 +31,17 @@ interface SaveResponse {
   details?: string;
 }
 
-// Définir les thèmes disponibles
-const themes = {
-  "Aventure": ["Forêt enchantée", "Océan mystérieux", "Montagne magique", "Jungle sauvage", "Îles perdues"],
-  "Fantaisie": ["Dragons et chevaliers", "Fées et lutins", "Sorciers et potions", "Créatures mythiques", "Mondes parallèles"],
-  "Science-Fiction": ["Voyage spatial", "Robots et IA", "Civilisations extraterrestres", "Futur de la Terre", "Technologies magiques"],
-  "Animaux": ["Ferme joyeuse", "Animaux sauvages", "Vie marine", "Insectes curieux", "Animaux qui parlent"],
-  "Éducatif": ["Découverte de la nature", "Voyage dans le corps humain", "Histoire et civilisations", "Sciences amusantes", "Exploration géographique"]
-};
+// Définir les thèmes disponibles avec des icônes/couleurs
+const themes = [
+  { id: "foret", label: "Forêt enchantée", category: "Aventure", color: "rgba(16, 185, 129, 0.3)" },
+  { id: "ocean", label: "Océan mystérieux", category: "Aventure", color: "rgba(14, 165, 233, 0.3)" },
+  { id: "espace", label: "Voyage spatial", category: "Science-Fiction", color: "rgba(99, 102, 241, 0.3)" },
+  { id: "dragons", label: "Dragons et chevaliers", category: "Fantaisie", color: "rgba(168, 85, 247, 0.3)" },
+  { id: "animaux", label: "Animaux qui parlent", category: "Animaux", color: "rgba(236, 72, 153, 0.3)" },
+  { id: "pirates", label: "Pirates et trésors", category: "Aventure", color: "rgba(245, 158, 11, 0.3)" },
+  { id: "fees", label: "Fées et lutins", category: "Fantaisie", color: "rgba(139, 92, 246, 0.3)" },
+  { id: "robots", label: "Robots et IA", category: "Science-Fiction", color: "rgba(59, 130, 246, 0.3)" },
+];
 
 // Définir les tranches d'âge
 const ageRanges = ["3-5 ans", "6-8 ans", "9-12 ans"];
@@ -72,60 +76,36 @@ const StepIndicator = ({ step, currentStep, title, description }: {
 };
 
 const LoadingStory = () => {
-  const phrases = [
-    "L'imagination s'éveille doucement...",
-    "Les mots dansent et s'assemblent...",
-    "Les personnages prennent vie...",
-    "Un monde magique se dessine...",
-    "Les couleurs s'épanouissent...",
-    "L'histoire se tisse délicatement...",
-    "La magie opère...",
-    "Les rêves prennent forme..."
-  ];
-
   return (
-    <div className="space-y-8 p-6">
-      <div className="text-center space-y-4">
-        <Heading size="6" className="text-blue-500">
-          Création de votre histoire magique...
-        </Heading>
-        
-        <div className="relative h-8 overflow-hidden">
-          {phrases.map((phrase, index) => (
-            <motion.div
-              key={index}
-              className="absolute w-full"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ 
-                opacity: [0, 1, 1, 0],
-                y: [20, 0, 0, -20]
-              }}
-              transition={{
-                duration: 3,
-                delay: index * 2,
-                repeat: Infinity,
-                repeatDelay: phrases.length * 2 - 3
-              }}
-            >
-              <Text size="2" color="gray">
-                {phrase}
-              </Text>
-            </motion.div>
-          ))}
-        </div>
+    <div className="space-y-8">
+      <div className="flex justify-between items-center mb-6">
+        <div className="h-8 w-48 bg-[var(--card-background)] animate-pulse rounded-md"></div>
+        <div className="h-10 w-40 bg-[var(--card-background)] animate-pulse rounded-md"></div>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-10 my-8">
         {[1, 2, 3].map((part) => (
           <motion.div
             key={part}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: part * 0.2 }}
-            className="space-y-4"
+            className="space-y-6"
           >
-            <Card className="w-full h-32 animate-pulse bg-blue-500/10" />
-            <Card className="w-full h-48 animate-pulse bg-blue-500/10" />
+            <SpotlightCard className="p-6 flex flex-col gap-3" spotlightColor="rgba(59, 130, 246, 0.2)">
+              <div className="h-5 w-24 bg-blue-500/20 animate-pulse rounded-full"></div>
+              <div className="space-y-2">
+                <div className="h-4 w-full bg-[var(--card-background)] animate-pulse rounded-md"></div>
+                <div className="h-4 w-full bg-[var(--card-background)] animate-pulse rounded-md"></div>
+                <div className="h-4 w-3/4 bg-[var(--card-background)] animate-pulse rounded-md"></div>
+              </div>
+            </SpotlightCard>
+            
+            <SpotlightCard className="overflow-hidden" spotlightColor="rgba(139, 92, 246, 0.2)">
+              <div className="w-full h-64 lg:h-80 bg-[var(--card-background)] animate-pulse flex items-center justify-center">
+                <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+              </div>
+            </SpotlightCard>
           </motion.div>
         ))}
       </div>
@@ -145,69 +125,51 @@ const StoryDisplay = ({
   isSaved: boolean
 }) => {
   return (
-    <div className="space-y-6 lg:space-y-8 p-4">
-      <div className="flex justify-between items-center">
-        <Heading size="6">Votre Histoire</Heading>
+    <div className="space-y-6 lg:space-y-8">
+      <div className="flex justify-between items-center mb-6">
+        <Heading size="6" className="text-[var(--text-color)]">Votre Histoire Magique</Heading>
         
-        <button
-          onClick={onSave}
+        <SpotlightButton
+          text={isSaved ? 'Histoire sauvegardée' : isSaving ? 'Sauvegarde...' : 'Sauvegarder l\'histoire'}
+          icon={isSaved ? 
+            <Check size={16} /> : 
+            isSaving ? 
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 
+            <Save size={16} />
+          }
           disabled={isSaving || isSaved}
-          className={`
-            flex items-center gap-2 px-4 py-2 rounded-lg transition-colors
-            ${isSaved 
-              ? 'bg-green-500 text-white' 
-              : isSaving 
-                ? 'bg-blue-300 text-white cursor-not-allowed' 
-                : 'bg-blue-500 text-white hover:bg-blue-600'
-            }
-          `}
-        >
-          {isSaved ? (
-            <>
-              <Check size={16} />
-              Sauvegardée
-            </>
-          ) : isSaving ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Sauvegarde...
-            </>
-          ) : (
-            <>
-              <Save size={16} />
-              Sauvegarder en PDF
-            </>
-          )}
-        </button>
+          onClick={onSave}
+        />
       </div>
       
-      {storyParts.map((part, index) => (
+      <div className="space-y-10 my-8">{storyParts.map((part, index) => (
         <motion.div
           key={index}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.2 }}
-          className="space-y-4"
+          className="space-y-6"
         >
-          <Card>
-            <Heading size="5">Partie {index + 1}</Heading>
-            <Text as="div" size="2" className="mt-4 whitespace-pre-wrap lg:text-3">
+          <SpotlightCard className="p-6" spotlightColor={`rgba(${56 + index * 20}, ${130 + index * 10}, ${246 - index * 10}, 0.3)`}>
+            <Badge size="2" variant="soft" color="blue" className="mb-3">Partie {index + 1}</Badge>
+            <Text as="div" size="3" className="whitespace-pre-wrap text-[var(--text-color)]">
               {part.text}
             </Text>
-          </Card>
+          </SpotlightCard>
 
-          <Card>
-            <div className="relative w-full h-48 lg:h-64 rounded-lg overflow-hidden">
+          <SpotlightCard className="overflow-hidden" spotlightColor="rgba(139, 92, 246, 0.3)">
+            <div className="relative w-full h-64 lg:h-80">
               <Image
                 src={part.image}
                 alt={`Illustration partie ${index + 1}`}
                 fill
                 className="object-contain"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             </div>
-          </Card>
+          </SpotlightCard>
         </motion.div>
-      ))}
+      ))}</div>
     </div>
   );
 };
@@ -319,11 +281,10 @@ export default function CreateStory() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title: title || `Histoire de ${characters} dans ${theme}`,
+          story: optimizedStoryParts.map(part => part.text).join('\n\n'),
           theme,
-          ageRange: age,
-          storyParts: optimizedStoryParts,
-          userId,
+          age_range: age,
+          images: optimizedStoryParts.map(part => part.image),
         }),
       });
       
@@ -372,48 +333,77 @@ export default function CreateStory() {
       className="min-h-screen flex-col lg:flex-row gap-8 p-4 lg:p-8"
     >
       <div className="w-full lg:w-[40%] lg:sticky lg:top-8 lg:self-start">
-        <Card>
-          <Heading size="8" mb="4">Créer une Histoire</Heading>
-          <Text size="3" color="gray" mb="6">
-            Utilisez l'IA pour créer une histoire unique et magique
+        <SpotlightCard className="p-6" spotlightColor="rgba(59, 130, 246, 0.3)">
+          <Heading size="6" mb="4" className="text-[var(--text-color)]">Créer une Histoire Magique</Heading>
+          <Text size="2" className="text-gray-400 mb-6">
+            Utilisez l'IA pour créer une histoire unique et merveilleuse pour votre enfant
           </Text>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Thème de l'histoire
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-[var(--text-color)]">
+                Choisissez un thème
               </label>
-              <input
-                type="text"
-                placeholder="Ex: La forêt enchantée, L'espace, Les pirates..."
-                value={theme}
-                onChange={(e) => setTheme(e.target.value)}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {themes.map((themeOption) => (
+                  <div 
+                    key={themeOption.id}
+                    onClick={() => setTheme(themeOption.label)}
+                    className={`
+                      cursor-pointer rounded-lg p-3 border transition-all duration-300
+                      ${theme === themeOption.label 
+                        ? 'border-blue-500 bg-blue-500/10 shadow-md' 
+                        : 'border-[var(--border-color)] hover:border-blue-400/50 bg-[var(--card-background)]'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--text-color)]">{themeOption.label}</span>
+                      {theme === themeOption.label && <Check className="w-4 h-4 text-blue-500" />}
+                    </div>
+                    <Badge size="1" className="mt-2" variant="soft" color="gray">{themeOption.category}</Badge>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Option pour un thème personnalisé */}
+              <div className="mt-3">
+                <input
+                  type="text"
+                  placeholder="Ou saisissez un thème personnalisé..."
+                  value={theme && !themes.some(t => t.label === theme) ? theme : ''}
+                  onChange={(e) => setTheme(e.target.value)}
+                  className="w-full px-3 py-2 border border-[var(--border-color)] rounded-md bg-[var(--card-background)] text-[var(--text-color)] shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-[var(--text-color)]">
                 Âge de l'enfant
               </label>
-              <select
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Sélectionnez un âge</option>
+              <div className="flex flex-wrap gap-3">
                 {ageRanges.map((range) => (
-                  <option key={range} value={range}>
+                  <button
+                    key={range}
+                    type="button"
+                    onClick={() => setAge(range)}
+                    className={`
+                      px-4 py-2 rounded-full transition-all
+                      ${age === range 
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white' 
+                        : 'bg-[var(--card-background)] border border-[var(--border-color)] text-[var(--text-color)] hover:border-blue-400'
+                      }
+                    `}
+                  >
                     {range}
-                  </option>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-[var(--text-color)]">
                 Personnages principaux
               </label>
               <textarea
@@ -421,41 +411,28 @@ export default function CreateStory() {
                 value={characters}
                 onChange={(e) => setCharacters(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
+                className="w-full px-3 py-2 border border-[var(--border-color)] rounded-md bg-[var(--card-background)] text-[var(--text-color)] shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[120px]"
               />
             </div>
 
-            <button
-              type="submit"
+            <SpotlightButton
+              text={isLoading ? 'Création en cours...' : 'Créer l\'histoire'}
+              icon={isLoading ? 
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 
+                <Sparkles className="w-5 h-5" />
+              }
               disabled={isLoading}
-              className={`
-                w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors
-                ${isLoading 
-                  ? 'bg-blue-300 text-white cursor-not-allowed' 
-                  : 'bg-blue-500 text-white hover:bg-blue-600'
-                }
-              `}
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Création en cours...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-4 h-4" />
-                  Créer l'histoire
-                </>
-              )}
-            </button>
+              onClick={() => !isLoading && handleSubmit(new Event('submit') as any)}
+              fullWidth={true}
+            />
           </form>
 
           {error && (
-            <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mt-8 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
               <Text color="red">{error}</Text>
             </div>
           )}
-        </Card>
+        </SpotlightCard>
       </div>
 
       <div className="w-full lg:w-[60%]">
@@ -467,42 +444,54 @@ export default function CreateStory() {
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.5, ease: 'easeInOut' }}
             >
-              <Card>
+              <SpotlightCard className="p-6" spotlightColor="rgba(124, 58, 237, 0.3)">
                 {isLoading ? (
                   <LoadingStory />
                 ) : (
                   <StoryDisplay 
                     storyParts={storyParts} 
-                    onSave={handleSaveStory}
+                    onSave={handleSaveStory} 
                     isSaving={isSaving}
                     isSaved={isSaved}
                   />
                 )}
-              </Card>
+              </SpotlightCard>
             </motion.div>
           ) : (
-            <div className="w-[calc(100%-4rem)] mx-auto rounded-md h-screen overflow-hidden">
+            <div className="w-full rounded-lg h-[70vh] overflow-hidden">
               <Vortex
-                backgroundColor="black"
+                backgroundColor="#050505"
                 rangeY={800}
-                particleCount={500}
-                baseHue={120}
+                particleCount={800}
+                baseHue={220}
                 className="flex items-center flex-col justify-center px-2 md:px-10 py-4 w-full h-full"
               >
-                <h2 className="text-white text-2xl md:text-6xl font-bold text-center">
-                  Prêt à créer une histoire magique ?
-                </h2>
-                <p className="text-white text-sm md:text-2xl max-w-xl mt-6 text-center">
-                  Laissez votre imagination prendre vie et créez des histoires uniques pour vos enfants
-                </p>
-                <div className="flex flex-col sm:flex-row items-center gap-4 mt-6">
-                  <button
-                    onClick={() => {}}
-                    className="px-6 py-3 rounded-lg bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-colors"
-                  >
-                    Commencer l'aventure
-                  </button>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                  className="text-center space-y-8"
+                >
+                  <h2 className="text-white text-3xl md:text-6xl font-bold text-center">
+                    Créez une histoire magique pour votre enfant
+                  </h2>
+                  <p className="text-white/80 text-lg md:text-2xl max-w-xl mx-auto">
+                    Laissez l'intelligence artificielle donner vie à votre imagination
+                  </p>
+                  <div className="flex justify-center mt-8">
+                    <SpotlightButton
+                      text="Commencer l'aventure"
+                      icon={<Sparkles className="w-5 h-5" />}
+                      onClick={() => {
+                        // Scroll en douceur vers le formulaire
+                        document.querySelector('form')?.scrollIntoView({ 
+                          behavior: 'smooth',
+                          block: 'center'
+                        });
+                      }}
+                    />
+                  </div>
+                </motion.div>
               </Vortex>
             </div>
           )}

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import StoryList from '../../../app/components/stories/StoryList'
+import { SpotlightButton } from '../../../app/components/ui/spotlight-button'
+import { Plus } from 'lucide-react'
 
 export default function Stories() {
   const router = useRouter()
@@ -48,12 +50,11 @@ export default function Stories() {
             Retrouvez toutes vos histoires magiques
           </p>
         </div>
-        <button
+        <SpotlightButton
+          text="Créer une nouvelle histoire"
+          icon={<Plus className="h-5 w-5" />}
           onClick={() => router.push('/create')}
-          className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-        >
-          Créer une nouvelle histoire
-        </button>
+        />
       </div>
       
       <StoryList />
