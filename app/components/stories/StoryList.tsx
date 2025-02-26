@@ -49,7 +49,7 @@ export default function StoryList({ onStoryUpdate }: StoryListProps) {
 
   useEffect(() => {
     loadStories()
-  }, [])
+  }, [loadStories])
 
   async function loadStories() {
     try {
@@ -404,7 +404,6 @@ export default function StoryList({ onStoryUpdate }: StoryListProps) {
                     deleteStory(story.id);
                   }
                 }}
-                variant="danger"
                 fullWidth={false}
               />
             </div>

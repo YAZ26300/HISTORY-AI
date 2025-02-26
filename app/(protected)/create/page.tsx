@@ -201,7 +201,7 @@ export default function CreateStory() {
     };
     
     getUserId();
-  }, []);
+  }, [supabase.auth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,9 +240,9 @@ export default function CreateStory() {
       setTitle(storyTitle);
       
       setCurrentStep(4);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error generating story:', error);
-      setError(error.message || 'Une erreur est survenue lors de la création de l\'histoire');
+      setError(error instanceof Error ? error.message : 'Une erreur est survenue lors de la création de l\'histoire');
     } finally {
       setIsLoading(false);
     }
