@@ -134,9 +134,10 @@ export default function ProtectedLayout({
       <aside
         className={`${
           isOpen ? 'w-64' : 'w-20'
-        } hidden lg:block bg-[#0D1117] border-r border-[var(--border-color)] transition-all duration-300 ease-in-out flex flex-col`}
+        } hidden lg:block bg-[#0D1117] border-r border-[var(--border-color)] transition-all duration-300 ease-in-out h-screen relative overflow-hidden`}
       >
-        <div className="h-16 flex items-center justify-between px-4">
+        {/* En-tête fixe */}
+        <div className="absolute top-0 left-0 right-0 h-16 px-4 bg-[#0D1117] border-b border-[var(--border-color)] flex items-center justify-between">
           {isOpen ? (
             <h2 className="text-xl font-bold text-[var(--text-color)]">StoryAI</h2>
           ) : (
@@ -163,36 +164,41 @@ export default function ProtectedLayout({
           />
         </div>
 
-        <nav className="flex-1 px-2 py-4 overflow-y-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center px-4 py-3 mb-2 rounded-lg transition-colors text-[var(--text-color)] ${
-                  pathname === item.href
-                    ? 'bg-blue-500/20 text-blue-400'
-                    : 'hover:bg-[var(--hover-color)]'
-                }`}
-              >
-                <Icon className="w-6 h-6" />
-                {isOpen && <span className="ml-3">{item.label}</span>}
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Zone de défilement pour la navigation */}
+        <div className="absolute top-16 bottom-[160px] left-0 right-0 overflow-y-auto">
+          <nav className="px-2 py-4 space-y-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center px-4 py-3 rounded-lg transition-colors text-[var(--text-color)] ${
+                    pathname === item.href
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : 'hover:bg-[var(--hover-color)]'
+                  }`}
+                >
+                  <Icon className="w-6 h-6" />
+                  {isOpen && <span className="ml-3">{item.label}</span>}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
-        {/* Afficher le profil utilisateur uniquement si le sidebar est ouvert */}
-        {isOpen && <UserProfile />}
-
-        <div className="p-4">
-          <SpotlightButton
-            text={isOpen ? "Déconnexion" : ""}
-            icon={<LogOut className="w-5 h-5" />}
-            onClick={handleSignOut}
-            fullWidth={true}
-          />
+        {/* Pied de page fixe */}
+        <div className="absolute bottom-0 left-0 right-0 bg-[#0D1117] border-t border-[var(--border-color)]">
+          {/* Afficher le profil utilisateur uniquement si le sidebar est ouvert */}
+          {isOpen && <UserProfile />}
+          <div className="p-4">
+            <SpotlightButton
+              text={isOpen ? "Déconnexion" : ""}
+              icon={<LogOut className="w-5 h-5" />}
+              onClick={handleSignOut}
+              fullWidth={true}
+            />
+          </div>
         </div>
       </aside>
 
@@ -224,50 +230,58 @@ export default function ProtectedLayout({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
-              className="lg:hidden fixed w-64 h-full bg-[#0D1117] border-r border-[var(--border-color)] p-4 z-50"
+              className="lg:hidden fixed w-64 h-screen bg-[#0D1117] border-r border-[var(--border-color)] z-50 overflow-hidden"
             >
-              <div className="relative flex items-center mb-8">
-                <h2 className="text-xl font-bold text-[var(--text-color)]">StoryAI</h2>
-                <div className="absolute -right-1 -top-1 p-2 rounded-lg bg-[#161B22] hover:bg-[#1F2937] transition-colors">
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center justify-center"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+              {/* En-tête fixe */}
+              <div className="absolute top-0 left-0 right-0 px-4 py-6 bg-[#0D1117] border-b border-[var(--border-color)]">
+                <div className="relative flex items-center">
+                  <h2 className="text-xl font-bold text-[var(--text-color)]">StoryAI</h2>
+                  <div className="absolute -right-1 -top-1 p-2 rounded-lg bg-[#161B22] hover:bg-[#1F2937] transition-colors">
+                    <button
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-center"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-              
-              <nav className="space-y-2">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className={`flex items-center px-4 py-3 rounded-lg transition-colors text-[var(--text-color)] ${
-                        pathname === item.href
-                          ? 'bg-blue-500/20 text-blue-400'
-                          : 'hover:bg-[var(--hover-color)]'
-                      }`}
-                    >
-                      <Icon className="w-6 h-6" />
-                      <span className="ml-3">{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
 
-              <UserProfile />
+              {/* Zone de défilement pour la navigation */}
+              <div className="absolute top-[88px] bottom-[160px] left-0 right-0 overflow-y-auto px-4">
+                <nav className="space-y-2">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsOpen(false)}
+                        className={`flex items-center px-4 py-3 rounded-lg transition-colors text-[var(--text-color)] ${
+                          pathname === item.href
+                            ? 'bg-blue-500/20 text-blue-400'
+                            : 'hover:bg-[var(--hover-color)]'
+                        }`}
+                      >
+                        <Icon className="w-6 h-6" />
+                        <span className="ml-3">{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
 
-              <div className="mt-auto p-4">
-                <SpotlightButton
-                  text="Déconnexion"
-                  icon={<LogOut className="w-5 h-5" />}
-                  onClick={handleSignOut}
-                  fullWidth={true}
-                />
+              {/* Pied de page fixe */}
+              <div className="absolute bottom-0 left-0 right-0 bg-[#0D1117] border-t border-[var(--border-color)]">
+                <UserProfile />
+                <div className="p-4">
+                  <SpotlightButton
+                    text="Déconnexion"
+                    icon={<LogOut className="w-5 h-5" />}
+                    onClick={handleSignOut}
+                    fullWidth={true}
+                  />
+                </div>
               </div>
             </motion.aside>
           </>
