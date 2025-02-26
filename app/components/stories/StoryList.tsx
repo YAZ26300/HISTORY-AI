@@ -5,7 +5,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import Image from 'next/image'
 import { SpotlightCard } from '../../components/ui/spotlight-card'
 import { SpotlightButton } from '../../components/ui/spotlight-button'
-import { Book, Download, Calendar, PenTool, FileImage, BookOpen } from 'lucide-react'
+import { Book, Download, Calendar, PenTool, FileImage, BookOpen, Trash2 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import BookView from './BookView'
 import toast from 'react-hot-toast'
@@ -320,6 +320,38 @@ export default function StoryList({ onStoryUpdate }: StoryListProps) {
     }
   };
 
+  async function deleteStory(storyId: string) {
+    try {
+      // Récupérer la session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('Vous devez être connecté pour supprimer une histoire');
+        return;
+      }
+
+      const response = await fetch(`/api/stories/delete?id=${storyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la suppression');
+      }
+
+      toast.success('Histoire supprimée avec succès');
+      // Recharger la liste des histoires
+      loadStories();
+    } catch (error: any) {
+      console.error('Erreur lors de la suppression:', error);
+      toast.error(error.message || 'Erreur lors de la suppression');
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
@@ -360,9 +392,22 @@ export default function StoryList({ onStoryUpdate }: StoryListProps) {
         {stories.map((story) => (
           <SpotlightCard 
             key={story.id} 
-            className="overflow-hidden flex flex-col h-full"
+            className="overflow-hidden flex flex-col h-full relative"
             spotlightColor="rgba(59, 130, 246, 0.3)"
           >
+            <div className="absolute top-4 right-4 flex gap-2 z-50">
+              <SpotlightButton
+                text=""
+                icon={<Trash2 className="w-5 h-5" />}
+                onClick={() => {
+                  if (window.confirm('Êtes-vous sûr de vouloir supprimer cette histoire ?')) {
+                    deleteStory(story.id);
+                  }
+                }}
+                variant="danger"
+                fullWidth={false}
+              />
+            </div>
             <div className="relative w-full h-44 mb-4 overflow-hidden rounded-lg">
               {getCoverImage(story) ? (
                 <>

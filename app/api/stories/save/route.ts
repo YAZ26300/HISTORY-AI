@@ -4,6 +4,62 @@ import { NextResponse } from 'next/server'
 import { getPdfBuffer } from '../../../../lib/pdf'
 import { v4 as uuidv4 } from 'uuid'
 
+// Fonction pour générer un titre avec l'IA
+const generateTitle = async (storyContent: string, theme: string): Promise<string> => {
+  // Fonction utilitaire pour créer un titre court
+  const createShortTitle = (text: string): string => {
+    // Prendre les premiers mots jusqu'à un maximum de 30 caractères
+    const words = text.split(' ');
+    let shortTitle = '';
+    for (const word of words) {
+      if ((shortTitle + ' ' + word).length <= 30) {
+        shortTitle = shortTitle ? `${shortTitle} ${word}` : word;
+      } else {
+        break;
+      }
+    }
+    return shortTitle + '...';
+  };
+
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn('OPENAI_API_KEY non définie, utilisation du titre court par défaut');
+    return createShortTitle(storyContent);
+  }
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [{
+          role: "system",
+          content: "Tu es un expert en littérature jeunesse. Génère un titre court, accrocheur et adapté aux enfants pour une histoire."
+        }, {
+          role: "user",
+          content: `Génère un titre court (maximum 30 caractères) pour une histoire sur le thème "${theme}" dont voici le début : "${storyContent.substring(0, 500)}..."`
+        }],
+        max_tokens: 50,
+        temperature: 0.7
+      })
+    });
+
+    const data = await response.json();
+    if (data.choices && data.choices[0]?.message?.content) {
+      const aiTitle = data.choices[0].message.content.trim();
+      // S'assurer que même le titre généré par l'IA ne dépasse pas 30 caractères
+      return aiTitle.length <= 30 ? aiTitle : createShortTitle(aiTitle);
+    }
+    throw new Error('Pas de titre généré');
+  } catch (error) {
+    console.error('Erreur lors de la génération du titre:', error);
+    return createShortTitle(storyContent); // Fallback au titre court par défaut
+  }
+};
+
 export async function POST(request: Request) {
   try {
     const { story, theme, age_range, images, storyParts } = await request.json()
@@ -156,9 +212,9 @@ export async function POST(request: Request) {
       }
     }
 
-    // Extraire le titre de l'histoire (première ligne ou premiers mots)
-    const title = story.split('\n')[0].substring(0, 100) // Limiter à 100 caractères
-    
+    // Générer un titre avec l'IA
+    const title = await generateTitle(story, theme || '');
+
     // Enregistrer les métadonnées de l'histoire dans la base de données
     const { data: dbData, error: dbError } = await supabase
       .from('stories')

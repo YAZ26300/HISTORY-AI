@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserSupabaseClient } from '../../../lib/supabase';
-import GoogleLogin from '../../components/auth/GoogleLogin';
 import EmailAuth from '../../components/auth/EmailAuth';
 import { SpotlightCard } from '../../components/ui/spotlight-card';
 import { LockKeyhole } from 'lucide-react';
@@ -36,7 +35,6 @@ const BackgroundGradient = () => (
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [authMethod, setAuthMethod] = useState<'email' | 'google'>('email');
   const [loading, setLoading] = useState(true);
   const supabase = createBrowserSupabaseClient();
 
@@ -108,38 +106,7 @@ export default function LoginPage() {
           Connectez-vous pour créer des histoires magiques
         </p>
 
-        <div className="space-y-6">
-          <div className="flex justify-center gap-4 mb-6 bg-[#1e1e1e] rounded-lg p-1">
-            <button
-              onClick={() => setAuthMethod('email')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                authMethod === 'email'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
-                  : 'text-gray-300 hover:text-white'
-              }`}
-            >
-              Email
-            </button>
-            <button
-              onClick={() => setAuthMethod('google')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                authMethod === 'google'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
-                  : 'text-gray-300 hover:text-white'
-              }`}
-            >
-              Google
-            </button>
-          </div>
-
-          {authMethod === 'email' ? (
-            <EmailAuth redirectUrl={redirectUrl} />
-          ) : (
-            <div className="flex justify-center">
-              <GoogleLogin redirectUrl={redirectUrl} />
-            </div>
-          )}
-        </div>
+        <EmailAuth redirectUrl={redirectUrl} />
       </SpotlightCard>
     </div>
   );

@@ -11,27 +11,32 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <div className="relative h-[70vh] w-full flex items-center justify-center overflow-hidden bg-[var(--background-color)]">
+      <div className="relative h-[70vh] w-full flex items-center justify-center overflow-hidden bg-transparent">
         <motion.div
           className="absolute inset-0 opacity-20 pointer-events-none"
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.2 }}
           transition={{ duration: 1 }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/30 to-purple-500/30" />
-          <div className="absolute inset-0 [mask-image:radial-gradient(circle,transparent,black_80%)]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
+          <div className="absolute inset-0 [mask-image:radial-gradient(circle,transparent,transparent)]" />
         </motion.div>
 
         <div className="text-center relative z-10 px-4">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6">
             Créez des <ColourfulText text="histoires magiques" /> <br />
-            pour vos enfants
+            avec StoryAI
           </h1>
           <p className="text-xl md:text-2xl text-gray-400 mb-8 max-w-2xl mx-auto">
             Laissez l'intelligence artificielle donner vie à votre imagination
           </p>
           <Link href="/create">
-            <SpotlightButton text="Commencer une histoire" />
+            <SpotlightButton
+              text="Commencer l'aventure"
+              icon={<span className="text-2xl">✨</span>}
+              onClick={() => {}}
+              fullWidth={false}
+            />
           </Link>
         </div>
       </div>

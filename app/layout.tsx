@@ -7,7 +7,7 @@ import { Theme } from '@radix-ui/themes';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Histoire pour Enfants - AI",
+  title: "StoryAI - Créez des histoires magiques",
   description: "Créez des histoires magiques pour vos enfants avec l'aide de l'IA",
 };
 

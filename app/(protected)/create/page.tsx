@@ -500,19 +500,6 @@ export default function CreateStory() {
                   <p className="text-white/80 text-lg md:text-2xl max-w-xl mx-auto">
                     Laissez l'intelligence artificielle donner vie à votre imagination
                   </p>
-                  <div className="flex justify-center mt-8">
-                    <SpotlightButton
-                      text="Commencer l'aventure"
-                      icon={<Sparkles className="w-5 h-5" />}
-                      onClick={() => {
-                        // Scroll en douceur vers le formulaire
-                        document.querySelector('form')?.scrollIntoView({ 
-                          behavior: 'smooth',
-                          block: 'center'
-                        });
-                      }}
-                    />
-                  </div>
                 </motion.div>
               </Vortex>
             </div>

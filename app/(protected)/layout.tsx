@@ -5,8 +5,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '../../lib/supabase';
-import { Home, PenTool, BookOpen, LogOut, User } from 'lucide-react';
+import { Home, PenTool, BookOpen, LogOut, User, X, Menu } from 'lucide-react';
 import { SpotlightButton } from '../../app/components/ui/spotlight-button';
+import { AnimatePresence, motion } from 'framer-motion';
 
 // Composant pour afficher l'avatar et l'email de l'utilisateur
 const UserProfile = () => {
@@ -133,13 +134,13 @@ export default function ProtectedLayout({
       <aside
         className={`${
           isOpen ? 'w-64' : 'w-20'
-        } bg-[var(--card-background)] border-r border-[var(--border-color)] transition-all duration-300 ease-in-out flex flex-col`}
+        } hidden lg:block bg-[#0D1117] border-r border-[var(--border-color)] transition-all duration-300 ease-in-out flex flex-col`}
       >
         <div className="h-16 flex items-center justify-between px-4">
           {isOpen ? (
-            <h2 className="text-xl font-bold text-[var(--text-color)]">History AI</h2>
+            <h2 className="text-xl font-bold text-[var(--text-color)]">StoryAI</h2>
           ) : (
-            <h2 className="text-xl font-bold text-[var(--text-color)]">HA</h2>
+            <h2 className="text-xl font-bold text-[var(--text-color)]">SA</h2>
           )}
           <SpotlightButton
             icon={
@@ -194,6 +195,84 @@ export default function ProtectedLayout({
           />
         </div>
       </aside>
+
+      {/* Mobile Menu Button */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <SpotlightButton
+          icon={isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          onClick={() => setIsOpen(!isOpen)}
+          text=""
+        />
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop avec flou */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="lg:hidden fixed inset-0 z-40 backdrop-blur-sm bg-black/50"
+            />
+
+            {/* Sidebar mobile */}
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
+              className="lg:hidden fixed w-64 h-full bg-[#0D1117] border-r border-[var(--border-color)] p-4 z-50"
+            >
+              <div className="relative flex items-center mb-8">
+                <h2 className="text-xl font-bold text-[var(--text-color)]">StoryAI</h2>
+                <div className="absolute -right-1 -top-1 p-2 rounded-lg bg-[#161B22] hover:bg-[#1F2937] transition-colors">
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              
+              <nav className="space-y-2">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center px-4 py-3 rounded-lg transition-colors text-[var(--text-color)] ${
+                        pathname === item.href
+                          ? 'bg-blue-500/20 text-blue-400'
+                          : 'hover:bg-[var(--hover-color)]'
+                      }`}
+                    >
+                      <Icon className="w-6 h-6" />
+                      <span className="ml-3">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              <UserProfile />
+
+              <div className="mt-auto p-4">
+                <SpotlightButton
+                  text="Déconnexion"
+                  icon={<LogOut className="w-5 h-5" />}
+                  onClick={handleSignOut}
+                  fullWidth={true}
+                />
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Main content */}
       <main className="flex-1 overflow-auto">
