@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import StoryList from '../../../app/components/stories/StoryList'
 
 // Interface pour les statistiques
 interface StoryStats {
-  count: number;
-  latestStory: string | null;
-  favoriteTheme: string | null;
+  totalStories: number;
+  totalCharacters: number;
+  averageLength: number;
 }
 
 export default function Dashboard() {
@@ -20,84 +20,49 @@ export default function Dashboard() {
   )
   const [isLoading, setIsLoading] = useState(true)
   const [stats, setStats] = useState<StoryStats>({
-    count: 0,
-    latestStory: null,
-    favoriteTheme: null
+    totalStories: 0,
+    totalCharacters: 0,
+    averageLength: 0
   })
 
-  useEffect(() => {
-    checkUser()
-    loadStats()
-  }, [])
-
-  async function checkUser() {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/')
-      }
-    } catch (error) {
-      console.error('Error checking auth status:', error)
-      router.push('/')
-    } finally {
-      setIsLoading(false)
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      router.push('/auth/login')
     }
+    return session
   }
 
-  // Utiliser useCallback pour éviter des rendus inutiles
-  const loadStats = useCallback(async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) return;
+  const loadStats = async () => {
+    const session = await checkUser()
+    if (!session) return
 
-      // 1. Récupérer toutes les histoires de l'utilisateur
+    try {
       const { data: stories, error } = await supabase
         .from('stories')
         .select('*')
         .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
 
-      if (error) throw error;
-      
-      if (!stories || stories.length === 0) {
-        return; // Aucune histoire, garder les statistiques par défaut
-      }
+      if (error) throw error
 
-      // 2. Compter le nombre d'histoires
-      const count = stories.length;
-      
-      // 3. Récupérer la dernière histoire (première dans le tableau car trié par date décroissante)
-      const latestStory = stories[0].title;
-      
-      // 4. Déterminer le thème favori (le plus utilisé)
-      const themeCounts: Record<string, number> = {};
-      stories.forEach(story => {
-        const theme = story.theme || 'Non spécifié';
-        themeCounts[theme] = (themeCounts[theme] || 0) + 1;
-      });
-      
-      let favoriteTheme: string | null = null;
-      let maxCount = 0;
-      
-      Object.entries(themeCounts).forEach(([theme, count]) => {
-        if (count > maxCount) {
-          maxCount = count;
-          favoriteTheme = theme;
-        }
-      });
-      
-      // 5. Mettre à jour les statistiques
+      const totalStories = stories?.length || 0
+      const totalCharacters = stories?.reduce((acc, story) => acc + (story.content?.length || 0), 0) || 0
+      const averageLength = totalStories > 0 ? Math.round(totalCharacters / totalStories) : 0
+
       setStats({
-        count,
-        latestStory,
-        favoriteTheme
-      });
-      
+        totalStories,
+        totalCharacters,
+        averageLength
+      })
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error('Error loading stats:', error)
     }
-  }, [supabase]);
+  }
+
+  useEffect(() => {
+    checkUser()
+    loadStats()
+  }, [checkUser, loadStats, supabase.auth, router])
 
   if (isLoading) {
     return (
@@ -116,20 +81,20 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-[var(--card-background)] p-6 rounded-xl shadow-sm border border-[var(--border-color)]">
           <h3 className="text-lg font-semibold mb-2 text-[var(--text-color)]">Histoires créées</h3>
-          <p className="text-3xl font-bold text-blue-400">{stats.count}</p>
+          <p className="text-3xl font-bold text-blue-400">{stats.totalStories}</p>
         </div>
         
         <div className="bg-[var(--card-background)] p-6 rounded-xl shadow-sm border border-[var(--border-color)]">
-          <h3 className="text-lg font-semibold mb-2 text-[var(--text-color)]">Dernière histoire</h3>
-          <p className="text-gray-400">{stats.latestStory || "Aucune histoire créée"}</p>
+          <h3 className="text-lg font-semibold mb-2 text-[var(--text-color)]">Total des caractères</h3>
+          <p className="text-3xl font-bold text-purple-400">{stats.totalCharacters}</p>
         </div>
 
         <div className="bg-[var(--card-background)] p-6 rounded-xl shadow-sm border border-[var(--border-color)]">
-          <h3 className="text-lg font-semibold mb-2 text-[var(--text-color)]">Thème favori</h3>
-          <p className="text-gray-400">{stats.favoriteTheme || "-"}</p>
+          <h3 className="text-lg font-semibold mb-2 text-[var(--text-color)]">Longueur moyenne</h3>
+          <p className="text-3xl font-bold text-green-400">{stats.averageLength}</p>
         </div>
       </div>
       

@@ -1,53 +1,71 @@
 "use client";
 
+import { useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+
 interface SpotlightButtonProps {
-  text?: string;
+  text: string;
   icon?: React.ReactNode;
-  disabled?: boolean;
   onClick?: () => void;
+  disabled?: boolean;
   fullWidth?: boolean;
+  type?: 'button' | 'submit' | 'reset';
 }
 
-export function SpotlightButton({ 
-  text = "Hover me",
+export function SpotlightButton({
+  text,
   icon,
-  disabled = false,
   onClick,
-  fullWidth = false
+  disabled = false,
+  fullWidth = false,
+  type = 'button'
 }: SpotlightButtonProps) {
+  const divRef = useRef<HTMLButtonElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [opacity, setOpacity] = useState(0);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!divRef.current) return;
+
+    const div = divRef.current;
+    const rect = div.getBoundingClientRect();
+
+    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  const handleMouseEnter = () => {
+    setOpacity(1);
+  };
+
+  const handleMouseLeave = () => {
+    setOpacity(0);
+  };
+
   return (
-    <div style={{ transform: "none" }} className={fullWidth ? "w-full" : "inline-block"}>
-      <button
-        onClick={onClick}
-        disabled={disabled}
-        className="group relative inline-flex cursor-pointer rounded-xl bg-zinc-900 p-px font-semibold leading-6 text-white no-underline shadow-2xl shadow-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <span className="absolute inset-0 overflow-hidden rounded-xl">
-          <span className="absolute inset-0 rounded-xl bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(56,189,248,0.6)_0%,rgba(56,189,248,0)_75%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-            {" "}
-          </span>
-        </span>
-        <div className="relative z-10 flex items-center justify-center space-x-2 rounded-xl bg-gray-950/50 px-6 py-3 ring-1 ring-white/10">
-          <span>{text}</span>
-          {icon || (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-              data-slot="icon"
-              className="h-6 w-6"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
-                clipRule="evenodd"
-              ></path>
-            </svg>
-          )}
-        </div>
-        <span className="absolute -bottom-0 left-[1.125rem] h-px w-[calc(100%-2.25rem)] bg-gradient-to-r from-fuchsia-400/0 via-gray-400/90 to-fuchsia-400/0 transition-opacity duration-500 group-hover:opacity-40"></span>
-      </button>
-    </div>
+    <button
+      ref={divRef}
+      type={type}
+      disabled={disabled}
+      className={`group relative overflow-hidden rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 px-4 py-2 transition-all duration-300 
+        ${fullWidth ? 'w-full' : ''} 
+        ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-indigo-500/25'}`}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={onClick}
+    >
+      <div className="relative z-10 flex items-center justify-center gap-2">
+        {icon}
+        <span className="font-medium text-white">{text}</span>
+      </div>
+      <motion.div
+        className="absolute inset-0 z-0 bg-gradient-to-br from-indigo-400 to-purple-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        animate={{
+          WebkitMaskImage: `radial-gradient(30% 30px at ${position.x}px ${position.y}px, black 45%, transparent)`,
+          opacity
+        }}
+        transition={{ type: 'spring', bounce: 0 }}
+      />
+    </button>
   );
 } 

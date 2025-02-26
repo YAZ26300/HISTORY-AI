@@ -1,243 +1,113 @@
 'use client';
 
 import { useState } from 'react';
-import { createBrowserSupabaseClient } from '../../../lib/supabase';
+import { createBrowserClient } from '@supabase/ssr';
 import { SpotlightButton } from '../ui/spotlight-button';
-import { LogIn, UserPlus, KeyRound } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 interface EmailAuthProps {
-  redirectUrl?: string;
+  mode: 'login' | 'signup' | 'reset';
 }
 
-export default function EmailAuth({ redirectUrl = '/dashboard' }: EmailAuthProps) {
-  const [mode, setMode] = useState<'signin' | 'signup' | 'reset'>('signin');
+export default function EmailAuth({ mode }: EmailAuthProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
-  const supabase = createBrowserSupabaseClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     setMessage('');
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      window.location.href = redirectUrl;
-    } catch (error: any) {
-      setMessage(error.message || 'Une erreur est survenue lors de la connexion');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
-
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}${redirectUrl}`,
-        },
-      });
-
-      if (error) throw error;
-
-      setMessage('Vérifiez votre email pour confirmer votre inscription');
-    } catch (error: any) {
-      setMessage(error.message || 'Une erreur est survenue lors de l\'inscription');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
-
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
-
-      if (error) throw error;
-
-      setMessage('Vérifiez votre email pour réinitialiser votre mot de passe');
-    } catch (error: any) {
-      setMessage(error.message || 'Une erreur est survenue');
+      if (mode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+      } else if (mode === 'signup') {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) throw error;
+        setMessage('Vérifiez votre email pour confirmer votre inscription.');
+      } else if (mode === 'reset') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        if (error) throw error;
+        setMessage('Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.');
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Une erreur est survenue');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-md">
-      {mode === 'signin' && (
-        <form onSubmit={handleSignIn} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-200">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800/50 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-200">
-              Mot de passe
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800/50 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-          </div>
-          {message && (
-            <p className="text-sm text-red-400">{message}</p>
-          )}
-          <div onClick={(e) => e.preventDefault()}>
-            <SpotlightButton
-              text={loading ? 'Connexion...' : 'Se connecter'}
-              icon={<LogIn className="h-5 w-5" />}
-              disabled={loading}
-              onClick={() => handleSignIn(new Event('submit') as any)}
-              fullWidth={true}
-            />
-          </div>
-          <div className="flex justify-between text-sm">
-            <button
-              type="button"
-              onClick={() => setMode('signup')}
-              className="text-blue-400 hover:text-blue-300"
-            >
-              Créer un compte
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('reset')}
-              className="text-blue-400 hover:text-blue-300"
-            >
-              Mot de passe oublié ?
-            </button>
-          </div>
-        </form>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500">
+          {error}
+        </div>
+      )}
+      
+      {message && (
+        <div className="p-3 rounded bg-green-500/10 border border-green-500/20 text-green-500">
+          {message}
+        </div>
       )}
 
-      {mode === 'signup' && (
-        <form onSubmit={handleSignUp} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-200">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800/50 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-200">
-              Mot de passe
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800/50 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-          </div>
-          {message && (
-            <p className={`text-sm ${message.includes('Vérifiez') ? 'text-green-400' : 'text-red-400'}`}>
-              {message}
-            </p>
-          )}
-          <div onClick={(e) => e.preventDefault()}>
-            <SpotlightButton
-              text={loading ? 'Inscription...' : 'S\'inscrire'}
-              icon={<UserPlus className="h-5 w-5" />}
-              disabled={loading}
-              onClick={() => handleSignUp(new Event('submit') as any)}
-              fullWidth={true}
-            />
-          </div>
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setMode('signin')}
-              className="text-sm text-blue-400 hover:text-blue-300"
-            >
-              Déjà un compte ? Se connecter
-            </button>
-          </div>
-        </form>
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium mb-2">
+          Email
+        </label>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="w-full px-3 py-2 rounded-lg bg-[var(--input-background)] border border-[var(--border-color)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      {mode !== 'reset' && (
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium mb-2">
+            Mot de passe
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full px-3 py-2 rounded-lg bg-[var(--input-background)] border border-[var(--border-color)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       )}
 
-      {mode === 'reset' && (
-        <form onSubmit={handleResetPassword} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-200">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800/50 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-          </div>
-          {message && (
-            <p className={`text-sm ${message.includes('Vérifiez') ? 'text-green-400' : 'text-red-400'}`}>
-              {message}
-            </p>
-          )}
-          <div onClick={(e) => e.preventDefault()}>
-            <SpotlightButton
-              text={loading ? 'Envoi...' : 'Réinitialiser le mot de passe'}
-              icon={<KeyRound className="h-5 w-5" />}
-              disabled={loading}
-              onClick={() => handleResetPassword(new Event('submit') as any)}
-              fullWidth={true}
-            />
-          </div>
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setMode('signin')}
-              className="text-sm text-blue-400 hover:text-blue-300"
-            >
-              Retour à la connexion
-            </button>
-          </div>
-        </form>
-      )}
-    </div>
+      <SpotlightButton
+        type="submit"
+        text={loading ? 'Chargement...' : mode === 'login' ? 'Se connecter' : mode === 'signup' ? 'S\'inscrire' : 'Réinitialiser'}
+        icon={<Mail className="w-5 h-5" />}
+        disabled={loading}
+        fullWidth={true}
+      />
+    </form>
   );
 } 

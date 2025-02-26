@@ -240,7 +240,7 @@ export default function CreateStory() {
       setTitle(storyTitle);
       
       setCurrentStep(4);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error generating story:', error);
       setError(error instanceof Error ? error.message : 'Une erreur est survenue lors de la création de l\'histoire');
     } finally {

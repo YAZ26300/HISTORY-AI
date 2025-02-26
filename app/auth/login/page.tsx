@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createBrowserSupabaseClient } from '../../../lib/supabase';
+import { createBrowserClient } from '@supabase/ssr';
+import { Heading } from '@radix-ui/themes';
 import EmailAuth from '../../components/auth/EmailAuth';
 import { SpotlightCard } from '../../components/ui/spotlight-card';
 import { LockKeyhole } from 'lucide-react';
@@ -32,81 +33,34 @@ const BackgroundGradient = () => (
   </div>
 );
 
-export default function LoginPage() {
+export default function Login() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [loading, setLoading] = useState(true);
-  const supabase = createBrowserSupabaseClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
-    // Nettoyer les données d'authentification existantes au chargement de la page
-    const cleanupAuth = async () => {
-      try {
-        // Vérifier s'il y a une session existante
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        // Si nous sommes sur la page de connexion et qu'une session existe déjà,
-        // vérifier si nous devons rediriger ou nettoyer
-        if (session && !error) {
-          console.log('Session existante détectée');
-          const redirect = searchParams.get('redirect') || '/dashboard';
-          router.push(redirect);
-          return;
-        }
-        
-        // Nettoyage des cookies et du stockage local
-        console.log('Nettoyage des données d\'authentification');
-        localStorage.removeItem('supabase.auth.token');
-        localStorage.removeItem('supabase.auth.refreshToken');
-        
-        document.cookie.split(";").forEach((c) => {
-          if (c.includes('sb-') || c.includes('supabase')) {
-            document.cookie = c
-              .replace(/^ +/, "")
-              .replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
-          }
-        });
-      } catch (error) {
-        console.error('Erreur lors du nettoyage:', error);
-      } finally {
-        setLoading(false);
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const returnTo = searchParams.get('returnTo') || '/dashboard';
+        router.push(returnTo);
       }
     };
 
-    cleanupAuth();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <BackgroundGradient />
-        <div className="w-12 h-12 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+    checkUser();
+  }, [router, searchParams, supabase.auth]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <BackgroundGradient />
-      
-      <SpotlightCard 
-        className="w-full max-w-md p-8 rounded-2xl border-[#333] bg-[#121212]"
-        spotlightColor="rgba(99, 102, 241, 0.4)"
-      >
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white">
-            <LockKeyhole size={32} />
-          </div>
-        </div>
-        
-        <h1 className="text-3xl font-bold text-center mb-2 text-white">Connexion</h1>
-        <p className="text-gray-400 text-center mb-8">
-          Connectez-vous pour créer des histoires magiques
-        </p>
-
-        <EmailAuth redirectUrl={redirectUrl} />
+      <SpotlightCard className="w-full max-w-md p-8">
+        <Heading size="6" mb="4" align="center">
+          Connexion
+        </Heading>
+        <EmailAuth mode="login" />
       </SpotlightCard>
     </div>
   );

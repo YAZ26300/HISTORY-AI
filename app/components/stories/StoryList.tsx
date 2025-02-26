@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import Image from 'next/image'
 import { SpotlightCard } from '../../components/ui/spotlight-card'
@@ -47,11 +47,7 @@ export default function StoryList({ onStoryUpdate }: StoryListProps) {
     storyParts: { text: string; image: string }[];
   } | null>(null);
 
-  useEffect(() => {
-    loadStories()
-  }, [loadStories])
-
-  async function loadStories() {
+  const loadStories = useCallback(async () => {
     try {
       setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -102,7 +98,11 @@ export default function StoryList({ onStoryUpdate }: StoryListProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase, onStoryUpdate])
+
+  useEffect(() => {
+    loadStories()
+  }, [loadStories])
 
   // Obtenir une image de couverture pour une histoire
   function getCoverImage(story: Story): string | null {
